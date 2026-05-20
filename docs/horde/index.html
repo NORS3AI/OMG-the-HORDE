@@ -8,6 +8,7 @@
 </head>
 <body>
 <header class="topbar">
+  <button id="play-btn" class="play-btn">Play</button>
   <h1>OMG the Horde</h1>
   <span class="phase-tag">Phase 1 · Foundations</span>
   <div class="hud">
@@ -27,18 +28,14 @@
   </section>
 
   <aside class="sidebar">
-    <section class="panel">
-      <button id="start-wave">Start Wave 1</button>
-      <p class="muted" id="wave-help">Survive all 5 waves to clear Phase 1.</p>
-    </section>
-
     <section class="panel" id="ctx-default">
       <h2>How to play</h2>
       <ul class="muted small">
-        <li>Orcs march from the top. Your wall blocks them; towers shoot them.</li>
-        <li>If the wall breaks, towers stop firing and orcs run for the castle.</li>
-        <li>Militia stand around the castle. They engage anything that gets past the wall.</li>
-        <li>Castle at 0 HP = game over. Gold and upgrades reset.</li>
+        <li>Click the castle, wall, or a tower slot to build / upgrade.</li>
+        <li>Press <strong>Play</strong> (top-left) to start the next wave.</li>
+        <li>Orcs march from the top. If the wall breaks, towers stop firing and orcs run for the castle.</li>
+        <li>Militia stand around the castle and engage anything that gets past the wall.</li>
+        <li>Castle at 0 HP = run over. Gold and upgrades reset; press Play to try again.</li>
       </ul>
     </section>
 
@@ -68,13 +65,7 @@
   </aside>
 </main>
 
-<div id="overlay" hidden>
-  <div class="overlay-card">
-    <h2 id="overlay-title">—</h2>
-    <p id="overlay-body">—</p>
-    <button id="overlay-button">New Game</button>
-  </div>
-</div>
+<div id="result-banner" hidden></div>
 
 <footer class="footer">
   <a href="../">← repo</a>

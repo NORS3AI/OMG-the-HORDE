@@ -194,20 +194,27 @@ const hudWave   = document.getElementById('hud-wave');
 const hudWall   = document.getElementById('hud-wall');
 const hudCastle = document.getElementById('hud-castle');
 const status    = document.getElementById('status');
-const waveBtn   = document.getElementById('start-wave');
-const waveHelp  = document.getElementById('wave-help');
+const playBtn   = document.getElementById('play-btn');
+const banner    = document.getElementById('result-banner');
 
 const ctxDefault = document.getElementById('ctx-default');
 const ctxCastle  = document.getElementById('ctx-castle');
 const ctxWall    = document.getElementById('ctx-wall');
 const ctxSlot    = document.getElementById('ctx-slot');
 
-const overlay = document.getElementById('overlay');
-const overlayTitle = document.getElementById('overlay-title');
-const overlayBody  = document.getElementById('overlay-body');
-const overlayBtn   = document.getElementById('overlay-button');
-
 function setStatus(msg) { status.textContent = msg; }
+
+function showBanner(text, kind) {
+  banner.textContent = text;
+  banner.className = kind || '';
+  banner.hidden = false;
+}
+
+function hideBanner() {
+  banner.hidden = true;
+  banner.textContent = '';
+  banner.className = '';
+}
 
 function updateHUD() {
   hudGold.textContent = `Gold: ${state.gold}`;
@@ -215,15 +222,21 @@ function updateHUD() {
   hudWall.textContent = `Wall: ${state.wall.broken ? 'destroyed' : Math.max(0, Math.ceil(state.wall.hp)) + ' / ' + state.wall.maxHp}`;
   hudCastle.textContent = `Castle: ${Math.max(0, Math.ceil(state.castle.hp))} / ${state.castle.maxHp}`;
 
-  if (state.gameOver) {
-    waveBtn.disabled = true;
-    waveBtn.textContent = state.win ? 'Phase 1 Cleared' : 'Defeated';
-  } else if (state.waveActive) {
-    waveBtn.disabled = true;
-    waveBtn.textContent = `Wave ${state.wave} in progress…`;
+  if (state.waveActive) {
+    playBtn.disabled = true;
+    playBtn.textContent = `Wave ${state.wave}…`;
+  } else if (state.gameOver) {
+    playBtn.disabled = false;
+    playBtn.textContent = 'Play Again';
+  } else if (state.wave === 0) {
+    playBtn.disabled = false;
+    playBtn.textContent = 'Play';
+  } else if (state.wave >= CONFIG.maxWave) {
+    playBtn.disabled = false;
+    playBtn.textContent = 'Play Again';
   } else {
-    waveBtn.disabled = false;
-    waveBtn.textContent = `Start Wave ${state.wave + 1}`;
+    playBtn.disabled = false;
+    playBtn.textContent = `Wave ${state.wave + 1}`;
   }
 }
 
@@ -384,8 +397,15 @@ document.querySelectorAll('button.close').forEach(b => {
   b.addEventListener('click', () => selectNone());
 });
 
-waveBtn.addEventListener('click', () => startWave());
-overlayBtn.addEventListener('click', () => resetGame());
+playBtn.addEventListener('click', () => onPlay());
+
+function onPlay() {
+  if (state.waveActive) return;
+  if (state.gameOver) {
+    resetGame();
+  }
+  startWave();
+}
 
 // =====================================================================
 // PLAYER ACTIONS
@@ -652,7 +672,8 @@ function update(dt) {
     state.castle.hp = 0;
     state.gameOver = true;
     state.win = false;
-    showOverlay('Defeated', `Your castle fell on wave ${state.wave}. Gold earned this run: ${state.totalGoldEarned}g.`);
+    showBanner(`Defeated on wave ${state.wave} — ${state.totalGoldEarned}g earned. Press Play to try again.`, 'loss');
+    setStatus(`Run over. Press Play (top-left) to start fresh.`);
   }
 
   // --- Wave complete? ---
@@ -661,9 +682,10 @@ function update(dt) {
     if (state.wave >= CONFIG.maxWave) {
       state.gameOver = true;
       state.win = true;
-      showOverlay('Phase 1 Cleared!', `You survived all 5 waves. Gold earned: ${state.totalGoldEarned}g.`);
+      showBanner(`Phase 1 cleared! ${state.totalGoldEarned}g earned. Press Play to play again.`, 'win');
+      setStatus(`You survived all 5 waves. Press Play to start a fresh run.`);
     } else {
-      setStatus(`Wave ${state.wave} cleared. Build up, then start the next.`);
+      setStatus(`Wave ${state.wave} cleared. Build up, then press Play for wave ${state.wave + 1}.`);
     }
   }
 
@@ -1145,15 +1167,8 @@ function drawProjectile(p) {
 }
 
 // =====================================================================
-// OVERLAY (win / lose)
+// RESET
 // =====================================================================
-
-function showOverlay(title, body) {
-  overlayTitle.textContent = title;
-  overlayBody.textContent = body;
-  overlay.hidden = false;
-  refreshUI();
-}
 
 function resetGame() {
   // Wipe gold and upgrades; this is Phase 1 — TP persistence comes in Phase 5.
@@ -1175,9 +1190,9 @@ function resetGame() {
   state.gameOver = false;
   state.win = false;
   state.totalGoldEarned = 0;
-  overlay.hidden = true;
+  hideBanner();
   selectNone();
-  setStatus('New game ready. Build your defenses, then press Start Wave 1.');
+  setStatus('Build your defenses, then press Play.');
   refreshUI();
 }
 
@@ -1195,6 +1210,6 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
-setStatus('Build your defenses, then press Start Wave 1.');
+setStatus('Build your defenses, then press Play.');
 refreshUI();
 requestAnimationFrame(loop);
