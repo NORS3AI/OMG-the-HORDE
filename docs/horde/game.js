@@ -2,6 +2,9 @@
 // All numbers below come from the design doc. Future phases extend CONFIG;
 // they should not rewrite Phase 1 values.
 
+const BUILD_VERSION = 'phase1-v4';
+console.log(`[OMG the Horde] build ${BUILD_VERSION}`);
+
 // =====================================================================
 // CONFIG
 // =====================================================================

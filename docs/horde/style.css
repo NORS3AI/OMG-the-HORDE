@@ -85,6 +85,7 @@ canvas {
   display: block;
   width: 100%;
   height: auto;
+  aspect-ratio: 900 / 540;
   max-height: 70vh;
   background: #2f3a26;
   border: 1px solid var(--border);
