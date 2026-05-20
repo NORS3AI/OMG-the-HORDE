@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OMG the Horde — Phase 1</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="topbar">
+  <h1>OMG the Horde</h1>
+  <span class="phase-tag">Phase 1 · Foundations</span>
+  <div class="hud">
+    <span id="hud-gold">Gold: 200</span>
+    <span id="hud-wave">Wave: 0 / 5</span>
+    <span id="hud-wall">Wall: — / —</span>
+    <span id="hud-castle">Castle: — / —</span>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="board">
+    <canvas id="game" width="900" height="540"></canvas>
+    <p class="hint" id="status">
+      Click the castle to train militia. Click a wall slot to place / upgrade an archer tower. Click the wall to upgrade it.
+    </p>
+  </section>
+
+  <aside class="sidebar">
+    <section class="panel">
+      <button id="start-wave">Start Wave 1</button>
+      <p class="muted" id="wave-help">Survive all 5 waves to clear Phase 1.</p>
+    </section>
+
+    <section class="panel" id="ctx-default">
+      <h2>How to play</h2>
+      <ul class="muted small">
+        <li>Orcs march from the top. Your wall blocks them; towers shoot them.</li>
+        <li>If the wall breaks, towers stop firing and orcs run for the castle.</li>
+        <li>Militia stand around the castle. They engage anything that gets past the wall.</li>
+        <li>Castle at 0 HP = game over. Gold and upgrades reset.</li>
+      </ul>
+    </section>
+
+    <section class="panel" id="ctx-castle" hidden>
+      <h2>Castle</h2>
+      <div id="castle-info" class="info"></div>
+      <div class="row" id="castle-upgrade-row"></div>
+      <h3>Train Militia</h3>
+      <p class="muted small" id="train-status">No militia training.</p>
+      <div class="train-buttons" id="train-buttons"></div>
+      <button class="close" data-close="castle">Close</button>
+    </section>
+
+    <section class="panel" id="ctx-wall" hidden>
+      <h2>Wall</h2>
+      <div id="wall-info" class="info"></div>
+      <div class="row" id="wall-upgrade-row"></div>
+      <button class="close" data-close="wall">Close</button>
+    </section>
+
+    <section class="panel" id="ctx-slot" hidden>
+      <h2>Tower Slot</h2>
+      <div id="slot-info" class="info"></div>
+      <div class="row" id="slot-actions"></div>
+      <button class="close" data-close="slot">Close</button>
+    </section>
+  </aside>
+</main>
+
+<div id="overlay" hidden>
+  <div class="overlay-card">
+    <h2 id="overlay-title">—</h2>
+    <p id="overlay-body">—</p>
+    <button id="overlay-button">New Game</button>
+  </div>
+</div>
+
+<footer class="footer">
+  <a href="../">← repo</a>
+  · <a href="https://github.com/nors3ai/OMG-the-HORDE">source</a>
+</footer>
+
+<script src="game.js"></script>
+</body>
+</html>
