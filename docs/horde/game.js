@@ -97,7 +97,7 @@ const CONFIG = {
   // Enemy movement/combat (per-wave HP/DMG/drop override the wave-agnostic bits).
   enemyStats: {
     grunt:  { speed: 28, range: 18, attackInterval: 1.0, ranged: false, color: '#7aa657' },
-    archer: { speed: 22, range: 230, attackInterval: 1.4, ranged: true, projSpeed: 260, color: '#a4c45d', stopRange: 140 },
+    archer: { speed: 22, range: 32, attackInterval: 1.4, ranged: true, projSpeed: 280, color: '#a4c45d' },
     boss:   { speed: 22, range: 24, attackInterval: 1.0, ranged: false, color: '#3d6b1f', big: true },
   },
 
@@ -577,7 +577,7 @@ function spawnEnemy(kind) {
       dmg: w.archer.dmg, drop: w.archer.drop,
       speed: s.speed, range: s.range, attackInterval: s.attackInterval,
       attackTimer: 0, ranged: s.ranged, color: s.color,
-      projSpeed: s.projSpeed, stopRange: s.stopRange,
+      projSpeed: s.projSpeed,
     });
   }
 }
@@ -693,35 +693,12 @@ function update(dt) {
 }
 
 // Enemy AI:
-//  - Move toward the wall y (or, if wall broken, toward the castle).
-//  - Grunts/Bosses melee attack the wall when in melee range, then the
-//    militia or castle if the wall is gone.
-//  - Archers stop at stopRange from the wall (or castle when broken) and
-//    fire arrows. Arrows target the wall, then militia, then castle.
+//  - Move toward the wall; if wall is broken, move to militia, then castle.
+//  - At melee range, attack the obstacle. Grunts and bosses swing in close;
+//    archers also walk in close, but their attack fires an arrow.
 function updateEnemy(e, dt) {
-  const targetY = state.wall.broken ? CASTLE.y : wallBarrierY(e.x);
   const goingTo = state.wall.broken ? 'castle' : 'wall';
 
-  // For archers: stop and fire when within stopRange of the target line.
-  if (e.type === 'archer') {
-    const distanceToLine = Math.max(0, targetY - e.y);
-    if (distanceToLine > e.stopRange) {
-      e.y += e.speed * dt;
-    }
-    e.attackTimer -= dt;
-    if (e.attackTimer <= 0) {
-      const target = pickEnemyArrowTarget(e, goingTo);
-      if (target) {
-        fireEnemyArrow(e, target);
-        e.attackTimer = e.attackInterval;
-      } else {
-        e.attackTimer = 0.3;
-      }
-    }
-    return;
-  }
-
-  // Grunts and bosses: walk to the next obstacle, melee it.
   const obstacle = pickEnemyMeleeTarget(e, goingTo);
   if (!obstacle) {
     e.y += e.speed * dt;
@@ -729,7 +706,6 @@ function updateEnemy(e, dt) {
   }
   const d = dist(e.x, e.y, obstacle.x, obstacle.y);
   if (d > obstacle.hitRadius + e.range) {
-    // Move toward obstacle.
     const dx = obstacle.x - e.x, dy = obstacle.y - e.y;
     const len = Math.hypot(dx, dy) || 1;
     e.x += (dx / len) * e.speed * dt;
@@ -737,7 +713,11 @@ function updateEnemy(e, dt) {
   } else {
     e.attackTimer -= dt;
     if (e.attackTimer <= 0) {
-      applyDamageToObstacle(obstacle, e.dmg);
+      if (e.ranged) {
+        fireEnemyArrow(e, obstacle);
+      } else {
+        applyDamageToObstacle(obstacle, e.dmg);
+      }
       e.attackTimer = e.attackInterval;
     }
   }
@@ -757,26 +737,16 @@ function pickEnemyMeleeTarget(e, goingTo) {
   return { kind: 'castle', x: CASTLE.x, y: CASTLE.y, hitRadius: CASTLE.r };
 }
 
-function pickEnemyArrowTarget(e, goingTo) {
-  if (goingTo === 'wall') return { kind: 'wall', x: e.x, y: wallBarrierY(e.x) };
-  if (state.militia.length) {
-    // Random militia for visual variety.
-    const m = state.militia[Math.floor(Math.random() * state.militia.length)];
-    return { kind: 'militia', target: m, x: m.x, y: m.y };
-  }
-  return { kind: 'castle', x: CASTLE.x, y: CASTLE.y };
-}
-
-function fireEnemyArrow(e, target) {
-  const dx = target.x - e.x, dy = target.y - e.y;
+function fireEnemyArrow(e, obstacle) {
+  const dx = obstacle.x - e.x, dy = obstacle.y - e.y;
   const len = Math.hypot(dx, dy) || 1;
   state.projectiles.push({
     x: e.x, y: e.y,
     vx: (dx / len) * e.projSpeed,
     vy: (dy / len) * e.projSpeed,
     dmg: e.dmg,
-    targetKind: target.kind,
-    target: target.target || null,
+    targetKind: obstacle.kind,
+    target: obstacle.target || null,
     fromEnemy: true,
     color: '#b9d36b',
   });
