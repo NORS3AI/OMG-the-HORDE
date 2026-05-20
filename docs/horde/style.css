@@ -1,0 +1,240 @@
+:root {
+  --bg: #1a1410;
+  --panel: #2a211b;
+  --panel-2: #352a22;
+  --ink: #f3e8d8;
+  --muted: #b9a995;
+  --accent: #e0a14a;
+  --accent-2: #f0b860;
+  --danger: #c0432b;
+  --good: #6fae54;
+  --border: #5a4636;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--panel);
+  border-bottom: 2px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+
+.phase-tag {
+  font-size: 0.75rem;
+  background: var(--panel-2);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.hud {
+  display: flex;
+  gap: 0.6rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+
+.hud span {
+  background: var(--panel-2);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+.board {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  background: #2f3a26;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: crosshair;
+}
+
+.hint {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  min-height: 1.2em;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.8rem;
+}
+
+.panel h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: var(--accent);
+}
+
+.panel h3 {
+  margin: 0.6rem 0 0.4rem;
+  font-size: 0.85rem;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0.3rem 0 0;
+}
+
+.small { font-size: 0.78rem; line-height: 1.4; }
+
+.info {
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.info strong { color: var(--accent-2); }
+
+.row, .train-buttons {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+button {
+  font: inherit;
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 80ms ease, border-color 80ms ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--border);
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.close {
+  text-align: center;
+  font-size: 0.8rem;
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+#start-wave {
+  width: 100%;
+  background: var(--accent);
+  color: #1a1410;
+  font-weight: bold;
+  border-color: var(--accent);
+  text-align: center;
+}
+
+#start-wave:hover:not(:disabled) {
+  background: var(--accent-2);
+}
+
+ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+li { margin-bottom: 0.2rem; }
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.overlay-card {
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  max-width: 400px;
+  text-align: center;
+}
+
+.overlay-card h2 {
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+}
+
+.overlay-card button {
+  margin-top: 1rem;
+  background: var(--accent);
+  color: #1a1410;
+  font-weight: bold;
+  border-color: var(--accent);
+  text-align: center;
+}
+
+.footer {
+  text-align: center;
+  padding: 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.footer a { color: var(--accent); }
