@@ -2,7 +2,7 @@
 // All numbers below come from the design doc. Future phases extend CONFIG;
 // they should not rewrite Phase 1 values.
 
-const BUILD_VERSION = 'phase1-v4';
+const BUILD_VERSION = 'phase1-v5';
 console.log(`[OMG the Horde] build ${BUILD_VERSION}`);
 
 // =====================================================================
@@ -675,8 +675,11 @@ function update(dt) {
     state.castle.hp = 0;
     state.gameOver = true;
     state.win = false;
+    state.waveActive = false;
+    state.spawnQueue = [];
     showBanner(`Defeated on wave ${state.wave} — ${state.totalGoldEarned}g earned. Press Play to try again.`, 'loss');
     setStatus(`Run over. Press Play (top-left) to start fresh.`);
+    refreshUI();
   }
 
   // --- Wave complete? ---
@@ -690,6 +693,7 @@ function update(dt) {
     } else {
       setStatus(`Wave ${state.wave} cleared. Build up, then press Play for wave ${state.wave + 1}.`);
     }
+    refreshUI();
   }
 
   if (killed > 0) refreshUI();
