@@ -85,6 +85,7 @@ canvas {
   display: block;
   width: 100%;
   height: auto;
+  aspect-ratio: 900 / 540;
   max-height: 70vh;
   background: #2f3a26;
   border: 1px solid var(--border);
@@ -202,7 +203,7 @@ li { margin-bottom: 0.2rem; }
 
 #result-banner {
   position: fixed;
-  top: 60px;
+  bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
   background: var(--panel);
@@ -215,6 +216,8 @@ li { margin-bottom: 0.2rem; }
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
   z-index: 10;
   pointer-events: none;
+  max-width: calc(100vw - 2rem);
+  text-align: center;
 }
 
 #result-banner.win   { border-color: var(--good); color: var(--good); }
