@@ -2,7 +2,7 @@
 // All numbers below come from the design doc. Future phases extend CONFIG;
 // they should not rewrite Phase 1 values.
 
-const BUILD_VERSION = 'phase1-v5';
+const BUILD_VERSION = 'phase1-v6';
 console.log(`[OMG the Horde] build ${BUILD_VERSION}`);
 
 // =====================================================================
@@ -63,49 +63,49 @@ const CONFIG = {
     },
   },
 
-  // Per-wave enemy stats from the doc.
+  // Per-wave enemy stats from the doc. Counts multiplied x100 for stress testing.
   waves: [
-    { // Wave 1: 5 Grunts then 1 Boss
-      grunts: 5, archers: 0,
+    { // Wave 1: 500 Grunts then 100 Bosses
+      grunts: 500, archers: 0, bosses: 100,
       grunt:  { hp: 5,  dmg: 2, drop: 1 },
       archer: { hp: 12, dmg: 5, drop: 3 },
       boss:   { hp: 10, dmg: 4, drop: 5 },
     },
-    { // Wave 2: 10 Grunts then 1 Boss
-      grunts: 10, archers: 0,
+    { // Wave 2: 1000 Grunts then 100 Bosses
+      grunts: 1000, archers: 0, bosses: 100,
       grunt:  { hp: 10, dmg: 4, drop: 2 },
       archer: { hp: 12, dmg: 5, drop: 3 },
       boss:   { hp: 20, dmg: 6, drop: 10 },
     },
-    { // Wave 3: 10 Grunts + 5 Archers then 1 Boss
-      grunts: 10, archers: 5,
+    { // Wave 3: 1000 Grunts + 500 Archers then 100 Bosses
+      grunts: 1000, archers: 500, bosses: 100,
       grunt:  { hp: 10, dmg: 4, drop: 3 },
       archer: { hp: 12, dmg: 5, drop: 3 },
       boss:   { hp: 30, dmg: 8, drop: 15 },
     },
-    { // Wave 4: 10 Grunts + 10 Archers then 1 Boss
-      grunts: 10, archers: 10,
+    { // Wave 4: 1000 Grunts + 1000 Archers then 100 Bosses
+      grunts: 1000, archers: 1000, bosses: 100,
       grunt:  { hp: 12, dmg: 5, drop: 4 },
       archer: { hp: 14, dmg: 6, drop: 4 },
       boss:   { hp: 40, dmg: 10, drop: 20 },
     },
-    { // Wave 5: 15 Grunts + 15 Archers then 1 Boss
-      grunts: 15, archers: 15,
+    { // Wave 5: 1500 Grunts + 1500 Archers then 100 Bosses
+      grunts: 1500, archers: 1500, bosses: 100,
       grunt:  { hp: 14, dmg: 6, drop: 5 },
       archer: { hp: 16, dmg: 7, drop: 5 },
       boss:   { hp: 50, dmg: 12, drop: 25 },
     },
   ],
 
-  // Enemy movement/combat (per-wave HP/DMG/drop override the wave-agnostic bits).
+  // Enemy movement/combat.
   enemyStats: {
-    grunt:  { speed: 28, range: 18, attackInterval: 1.0, ranged: false, color: '#7aa657' },
-    archer: { speed: 22, range: 32, attackInterval: 1.4, ranged: true, projSpeed: 280, color: '#a4c45d' },
-    boss:   { speed: 22, range: 24, attackInterval: 1.0, ranged: false, color: '#3d6b1f', big: true },
+    grunt:  { speed: 32, range: 14, attackInterval: 1.0, ranged: false, color: '#7aa657' },
+    archer: { speed: 26, range: 26, attackInterval: 1.4, ranged: true, projSpeed: 280, color: '#a4c45d' },
+    boss:   { speed: 26, range: 20, attackInterval: 1.0, ranged: false, color: '#3d6b1f', big: true },
   },
 
-  spawnInterval: 1.4, // seconds between enemy spawns in a wave
-  bossDelay: 2.0,     // extra delay before the boss spawns
+  spawnInterval: 0.03, // tight spacing for 100x stress test
+  bossDelay: 0.6,
 };
 
 // =====================================================================
@@ -117,32 +117,48 @@ const ctx = canvas.getContext('2d');
 const W = canvas.width;
 const H = canvas.height;
 
-const WALL_LEFT = 70;
-const WALL_RIGHT = 830;
-const WALL_BASE_Y = 380;
-const WALL_PEAK_Y = 320;
+// Winding white road. Enters top-center, sweeps left-right-left-right in front
+// of the wall, then turns into the gate in the middle of the wall.
+const PATH = [
+  { x: 450, y: -30 },  // 0 - off-screen spawn (top, center)
+  { x: 450, y: 60 },   // 1 - enter visible
+  { x: 820, y: 60 },   // 2 - top-right corner
+  { x: 820, y: 150 },  // 3
+  { x: 80,  y: 150 },  // 4 - sweep right→left
+  { x: 80,  y: 240 },  // 5
+  { x: 820, y: 240 },  // 6 - sweep left→right
+  { x: 820, y: 330 },  // 7
+  { x: 450, y: 330 },  // 8 - approach to gate
+  { x: 450, y: 405 },  // 9 - GATE position (end of path)
+];
+const GATE_IDX = PATH.length - 1;
+const GATE = PATH[GATE_IDX];
 
-function wallY(x) {
-  const t = Math.max(0, Math.min(1, (x - WALL_LEFT) / (WALL_RIGHT - WALL_LEFT)));
-  return WALL_BASE_Y - (WALL_BASE_Y - WALL_PEAK_Y) * 4 * t * (1 - t);
-}
+// Wall is a horizontal barrier at y=410 with a gate gap in the centre.
+const WALL_Y = 410;
+const WALL_THICKNESS = 22;
+const WALL_LEFT_END  = 410;  // wall section ends here (left of gate)
+const WALL_RIGHT_END = 490;  // wall section resumes here (right of gate)
+const WALL_BOARD_LEFT  = 60;
+const WALL_BOARD_RIGHT = 840;
 
-const SLOTS = [];
-for (let i = 0; i < 6; i++) {
-  const t = (i + 0.5) / 6;
-  const x = WALL_LEFT + t * (WALL_RIGHT - WALL_LEFT);
-  SLOTS.push({ idx: i, x, y: wallY(x) - 4, radius: 16 });
-}
+// Tower slots placed in the pockets between road sweeps so they have line of
+// sight to the path as the horde winds past them.
+const SLOTS = [
+  { idx: 0, x: 260, y: 105, radius: 16 },  // between sweep 1 (y=60) and sweep 2 (y=150)
+  { idx: 1, x: 640, y: 105, radius: 16 },
+  { idx: 2, x: 260, y: 195, radius: 16 },  // between sweep 2 and sweep 3
+  { idx: 3, x: 640, y: 195, radius: 16 },
+  { idx: 4, x: 260, y: 285, radius: 16 },  // between sweep 3 and the gate-approach row
+  { idx: 5, x: 640, y: 285, radius: 16 },
+];
 
-const CASTLE = { x: 450, y: 478, r: 34 };
+const CASTLE = { x: 450, y: 485, r: 32 };
 
 function dist(ax, ay, bx, by) {
   const dx = ax - bx, dy = ay - by;
   return Math.hypot(dx, dy);
 }
-
-// Returns the wall y at a given x (for the wall barrier line).
-function wallBarrierY(x) { return wallY(x) + 6; }
 
 // =====================================================================
 // STATE
@@ -511,13 +527,12 @@ canvas.addEventListener('click', (e) => {
       return;
     }
   }
-  // Crude wall hit-test: between WALL_LEFT and WALL_RIGHT, within +/-10 of the curve.
-  if (x >= WALL_LEFT && x <= WALL_RIGHT) {
-    const wy = wallY(x);
-    if (Math.abs(y - wy) <= 14) {
-      selectWall();
-      return;
-    }
+  // Wall/gate hit-test. Click the whole wall strip (sections + gate) to open
+  // the wall panel — that's where gate HP and gate upgrades live.
+  if (x >= WALL_BOARD_LEFT && x <= WALL_BOARD_RIGHT &&
+      y >= WALL_Y - WALL_THICKNESS && y <= WALL_Y + WALL_THICKNESS) {
+    selectWall();
+    return;
   }
   selectNone();
 });
@@ -535,7 +550,7 @@ function startWave() {
 
   const w = CONFIG.waves[state.wave - 1];
   const queue = [];
-  // Mix grunts and archers alternating.
+  // Mix grunts and archers alternating, then queue all bosses at the end.
   const total = w.grunts + w.archers;
   let g = w.grunts, a = w.archers;
   for (let i = 0; i < total; i++) {
@@ -543,43 +558,47 @@ function startWave() {
     else if (a > 0) { queue.push('archer'); a--; }
     else { queue.push('grunt'); g--; }
   }
-  queue.push({ boss: true });
+  const bosses = w.bosses || 1;
+  for (let i = 0; i < bosses; i++) queue.push({ boss: true });
   state.spawnQueue = queue;
-  state.nextSpawnAt = 0.8;
-  setStatus(`Wave ${state.wave} incoming!`);
+  state.nextSpawnAt = 0.4;
+  setStatus(`Wave ${state.wave} incoming — ${queue.length} units.`);
   refreshUI();
 }
 
 function spawnEnemy(kind) {
   const w = CONFIG.waves[state.wave - 1];
-  const x = 80 + Math.random() * (W - 160);
-  const y = -20;
+  // Spawn at PATH[0] with a tiny jitter so the horde isn't a perfect line.
+  const x = PATH[0].x + (Math.random() - 0.5) * 24;
+  const y = PATH[0].y + (Math.random() - 0.5) * 16;
+  const base = {
+    id: nextId(), x, y,
+    pathIndex: 0,
+    attackTimer: 0,
+  };
   if (kind === 'boss') {
     const s = CONFIG.enemyStats.boss;
-    state.enemies.push({
-      id: nextId(), type: 'boss', x, y,
+    state.enemies.push({ ...base, type: 'boss',
       hp: w.boss.hp, maxHp: w.boss.hp,
       dmg: w.boss.dmg, drop: w.boss.drop,
       speed: s.speed, range: s.range, attackInterval: s.attackInterval,
-      attackTimer: 0, ranged: s.ranged, color: s.color, big: s.big,
+      ranged: s.ranged, color: s.color, big: s.big,
     });
   } else if (kind === 'grunt') {
     const s = CONFIG.enemyStats.grunt;
-    state.enemies.push({
-      id: nextId(), type: 'grunt', x, y,
+    state.enemies.push({ ...base, type: 'grunt',
       hp: w.grunt.hp, maxHp: w.grunt.hp,
       dmg: w.grunt.dmg, drop: w.grunt.drop,
       speed: s.speed, range: s.range, attackInterval: s.attackInterval,
-      attackTimer: 0, ranged: s.ranged, color: s.color,
+      ranged: s.ranged, color: s.color,
     });
   } else if (kind === 'archer') {
     const s = CONFIG.enemyStats.archer;
-    state.enemies.push({
-      id: nextId(), type: 'archer', x, y,
+    state.enemies.push({ ...base, type: 'archer',
       hp: w.archer.hp, maxHp: w.archer.hp,
       dmg: w.archer.dmg, drop: w.archer.drop,
       speed: s.speed, range: s.range, attackInterval: s.attackInterval,
-      attackTimer: 0, ranged: s.ranged, color: s.color,
+      ranged: s.ranged, color: s.color,
       projSpeed: s.projSpeed,
     });
   }
@@ -700,17 +719,29 @@ function update(dt) {
 }
 
 // Enemy AI:
-//  - Move toward the wall; if wall is broken, move to militia, then castle.
-//  - At melee range, attack the obstacle. Grunts and bosses swing in close;
-//    archers also walk in close, but their attack fires an arrow.
+//  - While not yet at the gate, follow the winding road waypoint by waypoint.
+//    Towers can shoot the orcs while they walk, but the orcs never target
+//    the towers — they ignore them entirely.
+//  - At the gate, attack it. Once it falls, push past the gate to engage the
+//    closest militia, then the castle.
 function updateEnemy(e, dt) {
-  const goingTo = state.wall.broken ? 'castle' : 'wall';
-
-  const obstacle = pickEnemyMeleeTarget(e, goingTo);
-  if (!obstacle) {
-    e.y += e.speed * dt;
+  // 1. Walk the road until reaching the gate.
+  if (e.pathIndex < GATE_IDX) {
+    const next = PATH[e.pathIndex + 1];
+    const dx = next.x - e.x, dy = next.y - e.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= 4) {
+      e.pathIndex += 1;
+    } else {
+      e.x += (dx / d) * e.speed * dt;
+      e.y += (dy / d) * e.speed * dt;
+    }
     return;
   }
+
+  // 2. At the gate (or past it).
+  const obstacle = pickEnemyAttackTarget(e);
+  if (!obstacle) return;
   const d = dist(e.x, e.y, obstacle.x, obstacle.y);
   if (d > obstacle.hitRadius + e.range) {
     const dx = obstacle.x - e.x, dy = obstacle.y - e.y;
@@ -730,11 +761,11 @@ function updateEnemy(e, dt) {
   }
 }
 
-function pickEnemyMeleeTarget(e, goingTo) {
-  if (goingTo === 'wall') {
-    return { kind: 'wall', x: e.x, y: wallBarrierY(e.x), hitRadius: 6 };
+function pickEnemyAttackTarget(e) {
+  if (!state.wall.broken) {
+    return { kind: 'wall', x: GATE.x, y: GATE.y, hitRadius: 8 };
   }
-  // Wall is broken: militia first, then castle.
+  // Gate is down: pick the closest militia, fall through to castle.
   let best = null, bestD = Infinity;
   for (const m of state.militia) {
     const d = dist(e.x, e.y, m.x, m.y);
@@ -825,7 +856,9 @@ function updateMilitiaMember(m, dt) {
 
   let best = null, bestD = Infinity;
   for (const e of state.enemies) {
-    const engageable = state.wall.broken || e.y >= wallBarrierY(e.x) - 2;
+    // Militia only engage once the gate is down — before that the enemies are
+    // bottled up north of the wall and untouchable from the courtyard.
+    const engageable = state.wall.broken;
     if (!engageable) continue;
     const d = dist(m.x, m.y, e.x, e.y);
     if (d <= m.range && d < bestD) { bestD = d; best = e; }
@@ -857,8 +890,7 @@ function updateProjectile(p, dt) {
 
   if (p.fromEnemy) {
     if (p.targetKind === 'wall') {
-      const wy = wallBarrierY(p.x);
-      if (p.y >= wy) {
+      if (dist(p.x, p.y, GATE.x, GATE.y) <= 14) {
         if (!state.wall.broken) state.wall.hp -= p.dmg;
         p.dead = true;
       }
@@ -899,40 +931,22 @@ function updateProjectile(p, dt) {
 function render() {
   ctx.clearRect(0, 0, W, H);
 
-  // Spawn / approach area (grass)
+  // Field (grass) above the wall, courtyard below.
   ctx.fillStyle = '#3a4a30';
-  ctx.fillRect(0, 0, W, 300);
-
-  // Dirt strip in front of wall (orc approach)
-  const g = ctx.createLinearGradient(0, 280, 0, 380);
-  g.addColorStop(0, '#3a4a30');
-  g.addColorStop(1, '#5a432e');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 280, W, 100);
-
-  // Courtyard behind wall
+  ctx.fillRect(0, 0, W, WALL_Y - WALL_THICKNESS / 2);
   ctx.fillStyle = '#2f3a26';
-  ctx.fillRect(0, 380, W, H - 380);
+  ctx.fillRect(0, WALL_Y + WALL_THICKNESS / 2, W, H - (WALL_Y + WALL_THICKNESS / 2));
 
-  // Wall (curved)
+  drawPath();
   drawWall();
 
-  // Tower slots and towers
   for (const s of SLOTS) drawSlot(s);
-
-  // Castle
   drawCastle();
-
-  // Militia
   for (const m of state.militia) drawMilitiaMember(m);
-
-  // Enemies
   for (const e of state.enemies) drawEnemy(e);
-
-  // Projectiles
   for (const p of state.projectiles) drawProjectile(p);
 
-  // Selection highlight
+  // Selection highlight.
   if (state.selected.kind === 'slot') {
     const s = SLOTS[state.selected.slotIdx];
     ctx.strokeStyle = '#f0b860';
@@ -951,61 +965,104 @@ function render() {
   }
 }
 
-function drawWall() {
-  if (state.wall.broken) {
-    // Broken: scattered rubble.
-    ctx.fillStyle = '#7d6a4f';
-    for (let i = 0; i < 40; i++) {
-      const x = WALL_LEFT + (i / 40) * (WALL_RIGHT - WALL_LEFT) + (Math.sin(i * 11.3) * 10);
-      const y = wallY(x) + (Math.sin(i * 7.7) * 4);
-      ctx.fillRect(x - 6, y, 8, 6);
-    }
-    return;
-  }
-  // Curved white wall.
-  ctx.lineWidth = 14;
-  ctx.strokeStyle = '#e8e1d2';
+function tracePath() {
   ctx.beginPath();
-  for (let x = WALL_LEFT; x <= WALL_RIGHT; x += 4) {
-    const y = wallY(x);
-    if (x === WALL_LEFT) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+  for (let i = 0; i < PATH.length; i++) {
+    const p = PATH[i];
+    if (i === 0) ctx.moveTo(p.x, p.y);
+    else ctx.lineTo(p.x, p.y);
   }
+}
+
+function drawPath() {
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  // Dark dirt border so the white road reads cleanly against the grass.
+  ctx.strokeStyle = '#3a2f24';
+  ctx.lineWidth = 34;
+  tracePath();
   ctx.stroke();
+  // White road surface.
+  ctx.strokeStyle = '#ece4d2';
+  ctx.lineWidth = 28;
+  tracePath();
+  ctx.stroke();
+  // Subtle centre dashes for road texture.
+  ctx.setLineDash([6, 10]);
+  ctx.strokeStyle = 'rgba(120, 105, 80, 0.5)';
+  ctx.lineWidth = 1.5;
+  tracePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
 
-  // Battlement crenellations
+function drawWall() {
+  // Wall sections flanking the gate.
   ctx.fillStyle = '#e8e1d2';
-  for (let x = WALL_LEFT; x <= WALL_RIGHT; x += 24) {
-    const y = wallY(x);
-    ctx.fillRect(x - 4, y - 14, 8, 6);
+  ctx.fillRect(WALL_BOARD_LEFT, WALL_Y - WALL_THICKNESS / 2,
+               WALL_LEFT_END - WALL_BOARD_LEFT, WALL_THICKNESS);
+  ctx.fillRect(WALL_RIGHT_END, WALL_Y - WALL_THICKNESS / 2,
+               WALL_BOARD_RIGHT - WALL_RIGHT_END, WALL_THICKNESS);
+
+  // Crenellations on top of each wall section.
+  ctx.fillStyle = '#d6cdb8';
+  for (let bx = WALL_BOARD_LEFT + 4; bx < WALL_LEFT_END - 8; bx += 18) {
+    ctx.fillRect(bx, WALL_Y - WALL_THICKNESS / 2 - 6, 10, 6);
+  }
+  for (let bx = WALL_RIGHT_END + 4; bx < WALL_BOARD_RIGHT - 8; bx += 18) {
+    ctx.fillRect(bx, WALL_Y - WALL_THICKNESS / 2 - 6, 10, 6);
   }
 
-  // Wall HP bar
-  const pct = state.wall.hp / state.wall.maxHp;
-  const bw = (WALL_RIGHT - WALL_LEFT) * 0.6;
-  const bx = (W - bw) / 2;
-  const by = 412;
-  ctx.fillStyle = '#2a211b';
-  ctx.fillRect(bx - 2, by - 2, bw + 4, 8);
-  ctx.fillStyle = pct > 0.5 ? '#6fae54' : pct > 0.25 ? '#e0a14a' : '#c0432b';
-  ctx.fillRect(bx, by, bw * pct, 4);
+  // Gate posts (always present even when gate is destroyed).
+  ctx.fillStyle = '#5a4636';
+  ctx.fillRect(WALL_LEFT_END - 4, WALL_Y - WALL_THICKNESS / 2 - 8, 10, WALL_THICKNESS + 14);
+  ctx.fillRect(WALL_RIGHT_END - 6, WALL_Y - WALL_THICKNESS / 2 - 8, 10, WALL_THICKNESS + 14);
+
+  // Gate itself.
+  if (!state.wall.broken) {
+    ctx.fillStyle = '#5a3a1c';
+    ctx.fillRect(WALL_LEFT_END + 4, WALL_Y - WALL_THICKNESS / 2 + 2,
+                 WALL_RIGHT_END - WALL_LEFT_END - 8, WALL_THICKNESS - 4);
+    // Gate plank lines.
+    ctx.strokeStyle = '#3a2a1c';
+    ctx.lineWidth = 1;
+    for (let gx = WALL_LEFT_END + 12; gx < WALL_RIGHT_END - 4; gx += 10) {
+      ctx.beginPath();
+      ctx.moveTo(gx, WALL_Y - WALL_THICKNESS / 2 + 3);
+      ctx.lineTo(gx, WALL_Y + WALL_THICKNESS / 2 - 3);
+      ctx.stroke();
+    }
+    // Gate HP bar.
+    const pct = state.wall.hp / state.wall.maxHp;
+    const bw = 90;
+    const bx = GATE.x - bw / 2;
+    const by = WALL_Y - WALL_THICKNESS / 2 - 16;
+    ctx.fillStyle = '#2a211b';
+    ctx.fillRect(bx - 1, by - 1, bw + 2, 6);
+    ctx.fillStyle = pct > 0.5 ? '#6fae54' : pct > 0.25 ? '#e0a14a' : '#c0432b';
+    ctx.fillRect(bx, by, bw * pct, 4);
+  } else {
+    // Broken gate: scattered debris in the gap.
+    ctx.fillStyle = '#7d6a4f';
+    for (let i = 0; i < 10; i++) {
+      const dx = WALL_LEFT_END + 6 + i * 7;
+      const dy = WALL_Y + ((i % 3) - 1) * 4;
+      ctx.fillRect(dx, dy, 5, 4);
+    }
+  }
 }
 
 function drawWallOutline() {
   ctx.strokeStyle = '#f0b860';
   ctx.lineWidth = 2;
-  ctx.beginPath();
-  for (let x = WALL_LEFT; x <= WALL_RIGHT; x += 4) {
-    const y = wallY(x) - 10;
-    if (x === WALL_LEFT) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  for (let x = WALL_RIGHT; x >= WALL_LEFT; x -= 4) {
-    const y = wallY(x) + 6;
-    ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.stroke();
+  ctx.strokeRect(
+    WALL_BOARD_LEFT - 2,
+    WALL_Y - WALL_THICKNESS / 2 - 10,
+    (WALL_BOARD_RIGHT - WALL_BOARD_LEFT) + 4,
+    WALL_THICKNESS + 16,
+  );
 }
 
 function drawSlot(s) {
