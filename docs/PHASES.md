@@ -32,13 +32,20 @@ Hosted at <https://nors3ai.github.io/OMG-the-HORDE/horde>.
 
 ---
 
-## Phase 2 — Wave & Militia Depth
+## Phase 2 — Wave & Militia Depth (PLAYABLE)
 
-- **Walls** — levels 3–10 (80 → 300 HP).
-- **Castle** — levels 3–10 (125 → 600 HP).
-- **Archer Tower** — Level 4 (12 DMG, 2s, pierce x2, 20% crit).
-- **Extended militia** — Mounted Knight, Crossbowman, Mage, Catapult, Hero.
-- **Waves 6–10** — adds Orc Catapult (30 HP, 10 DMG, 2s load).
+Status: **shipped, playable in the same `docs/horde/` build.**
+
+- **Wall** — levels 3–10 added (80 → 300 HP; 100–2,000 g).
+- **Castle** — levels 3–10 added (125 → 600 HP; 100–2,000 g).
+- **Archer Tower** — Level 4: 12 DMG, 2s rate, **pierce x2**, **20% crit**
+  (crit deals 2× damage, drawn in gold).
+- **Extended militia** — Mounted Knight, Crossbowman, Mage (orange
+  fireball, 25 DMG/2s), Catapult (boulder, 30 DMG splash 1–5), Hero.
+- **Waves 6–10** — Orc Catapult enemy added (30 HP base, 10 DMG, 2s
+  load; HP/DMG and gold drop scale 6 → 10 g per wave). Boss HP/DMG
+  continues to climb each wave.
+- Game now wins at the end of **Wave 10**.
 
 ## Phase 3 — Tower Roster
 

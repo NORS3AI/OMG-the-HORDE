@@ -2,7 +2,7 @@
 // All numbers below come from the design doc. Future phases extend CONFIG;
 // they should not rewrite Phase 1 values.
 
-const BUILD_VERSION = 'phase1-v6';
+const BUILD_VERSION = 'phase2-v1';
 console.log(`[OMG the Horde] build ${BUILD_VERSION}`);
 
 // =====================================================================
@@ -11,100 +11,148 @@ console.log(`[OMG the Horde] build ${BUILD_VERSION}`);
 
 const CONFIG = {
   startGold: 200,
-  maxWave: 5,
+  maxWave: 10,
 
-  // Castle: base + 2 upgrades.
+  // Castle: base + 10 upgrades (Phase 2 extends levels 3–10).
   castle: {
     levels: [
-      { hp: 20,  cost: 0  },
-      { hp: 45,  cost: 25 },
-      { hp: 80,  cost: 50 },
+      { hp: 20,  cost: 0    },
+      { hp: 45,  cost: 25   },
+      { hp: 80,  cost: 50   },
+      { hp: 125, cost: 100  },
+      { hp: 180, cost: 150  },
+      { hp: 235, cost: 300  },
+      { hp: 290, cost: 500  },
+      { hp: 345, cost: 750  },
+      { hp: 405, cost: 1000 },
+      { hp: 460, cost: 1500 },
+      { hp: 600, cost: 2000 },
     ],
   },
 
-  // Wall: single HP pool, base + 2 upgrades. At 0 HP all towers cease fire.
+  // Wall (gate): base + 10 upgrades.
   wall: {
     levels: [
-      { hp: 20, cost: 0  },
-      { hp: 35, cost: 25 },
-      { hp: 55, cost: 50 },
+      { hp: 20,  cost: 0    },
+      { hp: 35,  cost: 25   },
+      { hp: 55,  cost: 50   },
+      { hp: 80,  cost: 100  },
+      { hp: 110, cost: 150  },
+      { hp: 140, cost: 300  },
+      { hp: 170, cost: 500  },
+      { hp: 195, cost: 750  },
+      { hp: 215, cost: 1000 },
+      { hp: 230, cost: 1500 },
+      { hp: 300, cost: 2000 },
     ],
   },
 
-  // Archer Tower: base (free) + 2 upgrades.
+  // Archer Tower: base + 3 upgrades. L4 gains pierce x2 and 20% crit.
   archerTower: {
     placeCost: 0,
     levels: [
-      { dmg: 2, fireRate: 1.0, range: 170, cost: 0  },
-      { dmg: 4, fireRate: 1.2, range: 185, cost: 10 },
-      { dmg: 7, fireRate: 1.5, range: 205, cost: 20 },
+      { dmg: 2,  fireRate: 1.0, range: 170, cost: 0,  pierce: 1, crit: 0    },
+      { dmg: 4,  fireRate: 1.2, range: 185, cost: 10, pierce: 1, crit: 0    },
+      { dmg: 7,  fireRate: 1.5, range: 205, cost: 20, pierce: 1, crit: 0    },
+      { dmg: 12, fireRate: 2.0, range: 220, cost: 35, pierce: 2, crit: 0.2  },
     ],
   },
 
-  // Militia: only one trains at a time, globally.
+  // Militia: one trains at a time, globally.
   militia: {
-    soldier: {
-      label: 'Soldier',
-      unlockCost: 1,  cost: 5,  buildTime: 3,
-      hp: 5,  dmg: 1, range: 28,  speed: 0,
-      ranged: false, color: '#9ec3d9',
-    },
-    archer: {
-      label: 'Archer',
-      unlockCost: 5,  cost: 7,  buildTime: 3,
-      hp: 7,  dmg: 3, range: 200, speed: 0,
-      ranged: true,  projSpeed: 320, color: '#cdd99e',
-    },
-    knight: {
-      label: 'Knight',
-      unlockCost: 15, cost: 10, buildTime: 4,
-      hp: 10, dmg: 5, range: 34,  speed: 0,
-      ranged: false, color: '#d9b69e',
-    },
+    soldier:       { label: 'Soldier',        unlockCost: 1,   cost: 5,  buildTime: 3, hp: 5,  dmg: 1,  range: 28,  ranged: false, color: '#9ec3d9', attackInterval: 1.0 },
+    archer:        { label: 'Archer',         unlockCost: 5,   cost: 7,  buildTime: 3, hp: 7,  dmg: 3,  range: 200, ranged: true,  projSpeed: 320, color: '#cdd99e', attackInterval: 1.0 },
+    knight:        { label: 'Knight',         unlockCost: 15,  cost: 10, buildTime: 4, hp: 10, dmg: 5,  range: 34,  ranged: false, color: '#d9b69e', attackInterval: 1.0 },
+    mountedKnight: { label: 'Mounted Knight', unlockCost: 30,  cost: 15, buildTime: 5, hp: 20, dmg: 10, range: 38,  ranged: false, color: '#c4986b', attackInterval: 1.0 },
+    crossbowman:   { label: 'Crossbowman',    unlockCost: 50,  cost: 20, buildTime: 6, hp: 25, dmg: 12, range: 230, ranged: true,  projSpeed: 380, color: '#b8c97a', attackInterval: 1.0 },
+    mage:          { label: 'Mage',           unlockCost: 100, cost: 30, buildTime: 5, hp: 15, dmg: 25, range: 220, ranged: true,  projSpeed: 260, color: '#c490d9', attackInterval: 2.0, projColor: '#ff9c4a', projSize: 4 },
+    catapult:      { label: 'Catapult',       unlockCost: 250, cost: 35, buildTime: 7, hp: 30, dmg: 30, range: 240, ranged: true,  projSpeed: 200, color: '#8a6c4a', attackInterval: 2.0, projColor: '#5a4636', projSize: 5, splash: { radius: 48, maxTargets: 5 } },
+    hero:          { label: 'Hero',           unlockCost: 500, cost: 50, buildTime: 9, hp: 50, dmg: 50, range: 40,  ranged: false, color: '#f0c060', attackInterval: 1.0 },
   },
 
   // Per-wave enemy stats from the doc. Counts multiplied x100 for stress testing.
   waves: [
-    { // Wave 1: 500 Grunts then 100 Bosses
-      grunts: 500, archers: 0, bosses: 100,
+    { // Wave 1
+      grunts: 500, archers: 0, catapults: 0, bosses: 100,
       grunt:  { hp: 5,  dmg: 2, drop: 1 },
       archer: { hp: 12, dmg: 5, drop: 3 },
+      catapult: { hp: 30, dmg: 10, drop: 6 },
       boss:   { hp: 10, dmg: 4, drop: 5 },
     },
-    { // Wave 2: 1000 Grunts then 100 Bosses
-      grunts: 1000, archers: 0, bosses: 100,
+    { // Wave 2
+      grunts: 1000, archers: 0, catapults: 0, bosses: 100,
       grunt:  { hp: 10, dmg: 4, drop: 2 },
       archer: { hp: 12, dmg: 5, drop: 3 },
+      catapult: { hp: 30, dmg: 10, drop: 6 },
       boss:   { hp: 20, dmg: 6, drop: 10 },
     },
-    { // Wave 3: 1000 Grunts + 500 Archers then 100 Bosses
-      grunts: 1000, archers: 500, bosses: 100,
+    { // Wave 3
+      grunts: 1000, archers: 500, catapults: 0, bosses: 100,
       grunt:  { hp: 10, dmg: 4, drop: 3 },
       archer: { hp: 12, dmg: 5, drop: 3 },
+      catapult: { hp: 30, dmg: 10, drop: 6 },
       boss:   { hp: 30, dmg: 8, drop: 15 },
     },
-    { // Wave 4: 1000 Grunts + 1000 Archers then 100 Bosses
-      grunts: 1000, archers: 1000, bosses: 100,
+    { // Wave 4
+      grunts: 1000, archers: 1000, catapults: 0, bosses: 100,
       grunt:  { hp: 12, dmg: 5, drop: 4 },
       archer: { hp: 14, dmg: 6, drop: 4 },
+      catapult: { hp: 30, dmg: 10, drop: 6 },
       boss:   { hp: 40, dmg: 10, drop: 20 },
     },
-    { // Wave 5: 1500 Grunts + 1500 Archers then 100 Bosses
-      grunts: 1500, archers: 1500, bosses: 100,
+    { // Wave 5
+      grunts: 1500, archers: 1500, catapults: 0, bosses: 100,
       grunt:  { hp: 14, dmg: 6, drop: 5 },
       archer: { hp: 16, dmg: 7, drop: 5 },
+      catapult: { hp: 30, dmg: 10, drop: 6 },
       boss:   { hp: 50, dmg: 12, drop: 25 },
+    },
+    { // Wave 6 — Orc Catapult joins (drop 6g)
+      grunts: 1800, archers: 1800, catapults: 800, bosses: 100,
+      grunt:  { hp: 16, dmg: 7, drop: 6 },
+      archer: { hp: 18, dmg: 8, drop: 6 },
+      catapult: { hp: 30, dmg: 10, drop: 6 },
+      boss:   { hp: 60, dmg: 14, drop: 30 },
+    },
+    { // Wave 7 — drop 7g
+      grunts: 2200, archers: 2200, catapults: 1000, bosses: 100,
+      grunt:  { hp: 18, dmg: 8, drop: 7 },
+      archer: { hp: 20, dmg: 9, drop: 7 },
+      catapult: { hp: 35, dmg: 12, drop: 7 },
+      boss:   { hp: 70, dmg: 16, drop: 35 },
+    },
+    { // Wave 8 — drop 8g
+      grunts: 2500, archers: 2500, catapults: 1200, bosses: 100,
+      grunt:  { hp: 20, dmg: 9, drop: 8 },
+      archer: { hp: 22, dmg: 10, drop: 8 },
+      catapult: { hp: 40, dmg: 14, drop: 8 },
+      boss:   { hp: 80, dmg: 18, drop: 40 },
+    },
+    { // Wave 9 — drop 9g
+      grunts: 3000, archers: 3000, catapults: 1400, bosses: 100,
+      grunt:  { hp: 22, dmg: 10, drop: 9 },
+      archer: { hp: 24, dmg: 11, drop: 9 },
+      catapult: { hp: 45, dmg: 16, drop: 9 },
+      boss:   { hp: 90, dmg: 20, drop: 45 },
+    },
+    { // Wave 10 — drop 10g
+      grunts: 3500, archers: 3500, catapults: 1600, bosses: 100,
+      grunt:  { hp: 24, dmg: 11, drop: 10 },
+      archer: { hp: 26, dmg: 12, drop: 10 },
+      catapult: { hp: 50, dmg: 18, drop: 10 },
+      boss:   { hp: 100, dmg: 22, drop: 50 },
     },
   ],
 
   // Enemy movement/combat.
   enemyStats: {
-    grunt:  { speed: 32, range: 14, attackInterval: 1.0, ranged: false, color: '#7aa657' },
-    archer: { speed: 26, range: 26, attackInterval: 1.4, ranged: true, projSpeed: 280, color: '#a4c45d' },
-    boss:   { speed: 26, range: 20, attackInterval: 1.0, ranged: false, color: '#3d6b1f', big: true },
+    grunt:    { speed: 32, range: 14, attackInterval: 1.0, ranged: false, color: '#7aa657' },
+    archer:   { speed: 26, range: 26, attackInterval: 1.4, ranged: true,  projSpeed: 280, color: '#a4c45d' },
+    catapult: { speed: 18, range: 30, attackInterval: 2.0, ranged: true,  projSpeed: 180, color: '#6a4a30', big: true, projColor: '#3a2a1c', projSize: 4 },
+    boss:     { speed: 26, range: 20, attackInterval: 1.0, ranged: false, color: '#3d6b1f', big: true },
   },
 
-  spawnInterval: 0.03, // tight spacing for 100x stress test
+  spawnInterval: 0.03,
   bossDelay: 0.6,
 };
 
@@ -179,7 +227,7 @@ const state = {
   militia: [],             // { type, x, y, hp, maxHp, cooldown }
   trainingQueue: [],       // [type, ...]
   currentTraining: null,   // { type, timeLeft, total }
-  unlocked: { soldier: false, archer: false, knight: false },
+  unlocked: { soldier: false, archer: false, knight: false, mountedKnight: false, crossbowman: false, mage: false, catapult: false, hero: false },
 
   enemies: [],
   projectiles: [],         // { x, y, vx, vy, dmg, targetId, source }
@@ -314,7 +362,7 @@ function renderCastlePanel() {
 
   // Training panel.
   trainBtns.innerHTML = '';
-  for (const type of ['soldier', 'archer', 'knight']) {
+  for (const type of Object.keys(CONFIG.militia)) {
     const m = CONFIG.militia[type];
     const b = document.createElement('button');
     if (!state.unlocked[type]) {
@@ -322,7 +370,8 @@ function renderCastlePanel() {
       b.disabled = state.gold < m.unlockCost;
       b.onclick = () => unlockMilitia(type);
     } else {
-      b.textContent = `Train ${m.label} — ${m.cost}g (${m.buildTime}s, ${m.hp}HP, ${m.dmg}DMG/s)`;
+      const interval = m.attackInterval && m.attackInterval !== 1.0 ? `/${m.attackInterval}s` : '/s';
+      b.textContent = `Train ${m.label} — ${m.cost}g · ${m.hp}HP · ${m.dmg}DMG${interval} · ${m.buildTime}s build`;
       b.disabled = state.gold < m.cost;
       b.onclick = () => queueMilitia(type);
     }
@@ -550,13 +599,17 @@ function startWave() {
 
   const w = CONFIG.waves[state.wave - 1];
   const queue = [];
-  // Mix grunts and archers alternating, then queue all bosses at the end.
-  const total = w.grunts + w.archers;
-  let g = w.grunts, a = w.archers;
+  // Interleave grunts/archers/catapults proportionally so the horde feels mixed.
+  const counts = { grunt: w.grunts, archer: w.archers, catapult: w.catapults || 0 };
+  const total = counts.grunt + counts.archer + counts.catapult;
   for (let i = 0; i < total; i++) {
-    if (g > 0 && (a === 0 || (i % 2 === 0))) { queue.push('grunt'); g--; }
-    else if (a > 0) { queue.push('archer'); a--; }
-    else { queue.push('grunt'); g--; }
+    // Pick the type with the largest remaining count.
+    let pick = 'grunt', best = -1;
+    for (const k of ['grunt', 'archer', 'catapult']) {
+      if (counts[k] > best) { best = counts[k]; pick = k; }
+    }
+    queue.push(pick);
+    counts[pick] -= 1;
   }
   const bosses = w.bosses || 1;
   for (let i = 0; i < bosses; i++) queue.push({ boss: true });
@@ -600,6 +653,15 @@ function spawnEnemy(kind) {
       speed: s.speed, range: s.range, attackInterval: s.attackInterval,
       ranged: s.ranged, color: s.color,
       projSpeed: s.projSpeed,
+    });
+  } else if (kind === 'catapult') {
+    const s = CONFIG.enemyStats.catapult;
+    state.enemies.push({ ...base, type: 'catapult',
+      hp: w.catapult.hp, maxHp: w.catapult.hp,
+      dmg: w.catapult.dmg, drop: w.catapult.drop,
+      speed: s.speed, range: s.range, attackInterval: s.attackInterval,
+      ranged: s.ranged, color: s.color, big: s.big,
+      projSpeed: s.projSpeed, projColor: s.projColor, projSize: s.projSize,
     });
   }
 }
@@ -786,7 +848,8 @@ function fireEnemyArrow(e, obstacle) {
     targetKind: obstacle.kind,
     target: obstacle.target || null,
     fromEnemy: true,
-    color: '#b9d36b',
+    color: e.projColor || '#b9d36b',
+    projSize: e.projSize || 2,
   });
 }
 
@@ -814,19 +877,22 @@ function updateTower(t, dt) {
   }
   if (!best) return;
 
-  // Fire arrow.
+  // Fire arrow. L4 has 20% crit (2x damage) and pierce x2.
   const dx = best.x - slot.x, dy = best.y - slot.y;
   const len = Math.hypot(dx, dy) || 1;
   const speed = 380;
+  const isCrit = cfg.crit > 0 && Math.random() < cfg.crit;
   state.projectiles.push({
     x: slot.x, y: slot.y - 4,
     vx: (dx / len) * speed,
     vy: (dy / len) * speed,
-    dmg: cfg.dmg,
+    dmg: cfg.dmg * (isCrit ? 2 : 1),
     targetKind: 'enemy',
     target: best,
     fromEnemy: false,
-    color: '#f3e8d8',
+    color: isCrit ? '#ffd86b' : '#f3e8d8',
+    pierce: cfg.pierce || 1,
+    hitIds: null, // lazily allocated on first hit when pierce > 1
   });
   t.cooldown = cfg.fireRate;
 }
@@ -844,8 +910,11 @@ function spawnMilitia(type) {
     hp: m.hp, maxHp: m.hp,
     dmg: m.dmg, range: m.range,
     ranged: m.ranged, projSpeed: m.projSpeed || 0,
-    attackTimer: 0, attackInterval: 1.0,
+    attackTimer: 0, attackInterval: m.attackInterval || 1.0,
     color: m.color,
+    projColor: m.projColor || '#e6f0c4',
+    projSize: m.projSize || 2,
+    splash: m.splash || null,
   });
 }
 
@@ -876,7 +945,11 @@ function updateMilitiaMember(m, dt) {
       targetKind: 'enemy',
       target: best,
       fromEnemy: false,
-      color: '#e6f0c4',
+      color: m.projColor || '#e6f0c4',
+      projSize: m.projSize || 2,
+      splash: m.splash || null,
+      pierce: 1,
+      hitIds: null,
     });
   } else {
     best.hp -= m.dmg;
@@ -910,8 +983,37 @@ function updateProjectile(p, dt) {
       }
     }
   } else {
-    // Tower / militia arrow targeting an enemy.
-    if (p.target && p.target.hp > 0) {
+    // Tower / militia projectile vs enemy.
+    // Splash projectiles (catapult militia): on reaching the target, damage the
+    // target plus up to maxTargets-1 nearby enemies in radius.
+    if (p.splash) {
+      if (p.target && p.target.hp > 0) {
+        if (dist(p.x, p.y, p.target.x, p.target.y) <= 8) {
+          applySplash(p, p.target);
+          p.dead = true;
+        }
+      } else {
+        // Target died mid-flight: detonate at current location.
+        applySplash(p, null);
+        p.dead = true;
+      }
+    }
+    // Piercing projectiles (Archer Tower L4): walk through up to `pierce` enemies.
+    else if (p.pierce > 1) {
+      if (!p.hitIds) p.hitIds = new Set();
+      for (const e of state.enemies) {
+        if (p.hitIds.has(e.id)) continue;
+        if (e.hp <= 0) continue;
+        if (dist(p.x, p.y, e.x, e.y) <= 8) {
+          e.hp -= p.dmg;
+          p.hitIds.add(e.id);
+          p.pierce -= 1;
+          if (p.pierce <= 0) { p.dead = true; break; }
+        }
+      }
+    }
+    // Standard single-target arrow.
+    else if (p.target && p.target.hp > 0) {
       if (dist(p.x, p.y, p.target.x, p.target.y) <= 8) {
         p.target.hp -= p.dmg;
         p.dead = true;
@@ -922,6 +1024,25 @@ function updateProjectile(p, dt) {
   }
 
   if (p.x < -30 || p.x > W + 30 || p.y < -30 || p.y > H + 30) p.dead = true;
+}
+
+function applySplash(p, primary) {
+  const cfg = p.splash;
+  const cx = p.x, cy = p.y;
+  // Sort enemies in range by distance; pick the closest maxTargets.
+  const hits = [];
+  for (const e of state.enemies) {
+    if (e.hp <= 0) continue;
+    const d = dist(cx, cy, e.x, e.y);
+    if (d <= cfg.radius) hits.push([d, e]);
+  }
+  hits.sort((a, b) => a[0] - b[0]);
+  let applied = 0;
+  for (const [, e] of hits) {
+    if (applied >= cfg.maxTargets) break;
+    e.hp -= p.dmg;
+    applied += 1;
+  }
 }
 
 // =====================================================================
@@ -1174,22 +1295,42 @@ function drawEnemy(e) {
   // Tusk marker
   ctx.fillStyle = '#f3e8d8';
   ctx.fillRect(e.x - 2, e.y + r * 0.2, 4, 2);
-  // HP bar
-  const pct = e.hp / e.maxHp;
-  ctx.fillStyle = '#2a211b';
-  ctx.fillRect(e.x - r, e.y - r - 6, r * 2, 3);
-  ctx.fillStyle = pct > 0.5 ? '#6fae54' : pct > 0.25 ? '#e0a14a' : '#c0432b';
-  ctx.fillRect(e.x - r, e.y - r - 6, r * 2 * pct, 3);
+  // HP bar (skip on huge waves to save fillRect calls — bosses always shown).
+  if (state.enemies.length < 400 || e.big) {
+    const pct = e.hp / e.maxHp;
+    ctx.fillStyle = '#2a211b';
+    ctx.fillRect(e.x - r, e.y - r - 6, r * 2, 3);
+    ctx.fillStyle = pct > 0.5 ? '#6fae54' : pct > 0.25 ? '#e0a14a' : '#c0432b';
+    ctx.fillRect(e.x - r, e.y - r - 6, r * 2 * pct, 3);
+  }
   if (e.type === 'archer') {
     ctx.strokeStyle = '#3a2a1c';
     ctx.beginPath();
     ctx.moveTo(e.x - 6, e.y - 2);
     ctx.lineTo(e.x + 6, e.y - 2);
     ctx.stroke();
+  } else if (e.type === 'catapult') {
+    // Bucket on top
+    ctx.fillStyle = '#3a2a1c';
+    ctx.fillRect(e.x - 7, e.y - r - 2, 14, 5);
+    ctx.fillStyle = '#1a1410';
+    ctx.fillRect(e.x - 4, e.y - r - 1, 8, 3);
   }
 }
 
 function drawProjectile(p) {
+  // Splash boulders, fireballs, and other "big" projectiles render as filled circles.
+  if (p.projSize && p.projSize >= 3) {
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.projSize, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#1a1410';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    return;
+  }
+  // Default: arrow trail.
   ctx.strokeStyle = p.color;
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -1218,7 +1359,7 @@ function resetGame() {
   state.militia = [];
   state.trainingQueue = [];
   state.currentTraining = null;
-  state.unlocked = { soldier: false, archer: false, knight: false };
+  state.unlocked = { soldier: false, archer: false, knight: false, mountedKnight: false, crossbowman: false, mage: false, catapult: false, hero: false };
   state.enemies = [];
   state.projectiles = [];
   state.gameOver = false;
