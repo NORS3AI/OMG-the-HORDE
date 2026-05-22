@@ -47,16 +47,20 @@ Status: **shipped, playable in the same `docs/horde/` build.**
   continues to climb each wave.
 - Game now wins at the end of **Wave 10**.
 
-## Phase 3 — Tower Roster
+## Phase 3 — Tower Roster (PLAYABLE)
 
-- **Cannon** (unlock 125 g) — 4 tiers, splash damage.
-- **Sniper's Nest** (unlock 200 g) — 4 tiers, high single-target.
-- **Tesla Coil** (unlock 300 g) — 4 tiers, chain-lightning + slow.
-- **Slingshot** (free) — 4 tiers, multi-hit crowd control.
-- **Frost Tower** (unlock 150 g) — 4 tiers, slow + freeze chance.
-- **Poison Dart** (unlock 40 g) — 4 tiers, DoT.
-- **Flamethrower** (unlock 200 g) — 4 tiers, continuous DoT + burn linger.
-- **Waves 11–15** — adds Orc Magi (25 HP, 12 DMG ice bolts).
+Status: **shipped.** Six new tower types alongside Archer.
+
+- **Slingshot** (free) — 4 tiers, multi-hit crowd control (2 → 5 hits per shot).
+- **Poison Dart** (unlock 40 g) — small hit + DoT (1/s for 4 s → 8/s for 6 s).
+- **Cannon** (unlock 125 g) — splash 15 → 80 targets.
+- **Frost Tower** (unlock 150 g) — slow 30 → 75 %; **L4 has 15 % freeze chance**.
+- **Sniper's Nest** (unlock 200 g) — long range, heavy single-target; 25 % crit at L3, 40 % at L4.
+- **Flamethrower** (unlock 200 g) — continuous DPS in radius; L3+ burns linger 2–4 s after enemy leaves.
+- **Tesla Coil** (unlock 300 g) — chain lightning hits 3 → 25 enemies and slows them.
+- **Waves 11–15** — Orc Magi joins the horde (25 HP base, 12 DMG ice bolt, 5 s cast cycle).
+- Slot panel now lists every unlocked / unlockable tower with a one-line stats blurb; tower icon colour and roof differ per type so the board is readable at a glance.
+- First Archer Tower of a run is free; subsequent ones cost 10 g.
 
 ## Phase 4 — Repair, Armored, & Ogres
 

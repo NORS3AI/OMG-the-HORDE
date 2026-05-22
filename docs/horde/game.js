@@ -2,7 +2,7 @@
 // All numbers below come from the design doc. Future phases extend CONFIG;
 // they should not rewrite Phase 1 values.
 
-const BUILD_VERSION = 'phase2-v1';
+const BUILD_VERSION = 'phase3-v1';
 console.log(`[OMG the Horde] build ${BUILD_VERSION}`);
 
 // =====================================================================
@@ -10,8 +10,8 @@ console.log(`[OMG the Horde] build ${BUILD_VERSION}`);
 // =====================================================================
 
 const CONFIG = {
-  startGold: 200,
-  maxWave: 10,
+  startGold: 0,
+  maxWave: 15,
 
   // Castle: base + 10 upgrades (Phase 2 extends levels 3–10).
   castle: {
@@ -47,15 +47,90 @@ const CONFIG = {
     ],
   },
 
-  // Archer Tower: base + 3 upgrades. L4 gains pierce x2 and 20% crit.
-  archerTower: {
-    placeCost: 0,
-    levels: [
-      { dmg: 2,  fireRate: 1.0, range: 170, cost: 0,  pierce: 1, crit: 0    },
-      { dmg: 4,  fireRate: 1.2, range: 185, cost: 10, pierce: 1, crit: 0    },
-      { dmg: 7,  fireRate: 1.5, range: 205, cost: 20, pierce: 1, crit: 0    },
-      { dmg: 12, fireRate: 2.0, range: 220, cost: 35, pierce: 2, crit: 0.2  },
-    ],
+  // Towers — 7 types (Phase 1 starts with Archer; Phase 3 adds 6 more).
+  // Each tower's `levels[0].cost` is the placement cost; `unlockCost` is paid
+  // once per run to make the tower buildable. Archer/Slingshot start unlocked.
+  towers: {
+    archer: {
+      label: 'Archer Tower', unlockCost: 0, startsUnlocked: true, firstFree: true,
+      describe: 'arrow · pierce / crit at L4',
+      levels: [
+        { dmg: 2,  fireRate: 1.0, range: 170, cost: 10, pierce: 1, crit: 0    },
+        { dmg: 4,  fireRate: 1.2, range: 185, cost: 10, pierce: 1, crit: 0    },
+        { dmg: 7,  fireRate: 1.5, range: 205, cost: 20, pierce: 1, crit: 0    },
+        { dmg: 12, fireRate: 2.0, range: 220, cost: 35, pierce: 2, crit: 0.2  },
+      ],
+    },
+    slingshot: {
+      label: 'Slingshot', unlockCost: 0, startsUnlocked: true,
+      describe: 'stone hits multiple enemies',
+      levels: [
+        { dmg: 1,  fireRate: 0.8, range: 150, cost: 8,   hits: 2, projColor: '#c8b78a' },
+        { dmg: 2,  fireRate: 0.8, range: 155, cost: 18,  hits: 3, projColor: '#c8b78a' },
+        { dmg: 5,  fireRate: 1.0, range: 165, cost: 45,  hits: 4, projColor: '#c8b78a' },
+        { dmg: 10, fireRate: 1.2, range: 175, cost: 100, hits: 5, projColor: '#c8b78a' },
+      ],
+    },
+    poison: {
+      label: 'Poison Dart', unlockCost: 40,
+      describe: 'small hit + damage over time',
+      levels: [
+        { dmg: 1, fireRate: 1.0, range: 170, cost: 50,  dot: { dps: 1, duration: 4 }, projColor: '#8ec07c' },
+        { dmg: 2, fireRate: 1.0, range: 175, cost: 110, dot: { dps: 2, duration: 5 }, projColor: '#8ec07c' },
+        { dmg: 4, fireRate: 1.0, range: 180, cost: 240, dot: { dps: 4, duration: 5 }, projColor: '#8ec07c' },
+        { dmg: 8, fireRate: 1.0, range: 185, cost: 520, dot: { dps: 8, duration: 6 }, projColor: '#8ec07c' },
+      ],
+    },
+    cannon: {
+      label: 'Cannon', unlockCost: 125,
+      describe: 'splash damage, many targets',
+      levels: [
+        { dmg: 5,  fireRate: 0.4, range: 175, cost: 35,  splash: { radius: 38, maxTargets: 15 }, projColor: '#3a2a1c', projSize: 4 },
+        { dmg: 11, fireRate: 0.5, range: 185, cost: 85,  splash: { radius: 46, maxTargets: 30 }, projColor: '#3a2a1c', projSize: 5 },
+        { dmg: 22, fireRate: 0.6, range: 195, cost: 190, splash: { radius: 54, maxTargets: 50 }, projColor: '#3a2a1c', projSize: 5 },
+        { dmg: 40, fireRate: 0.7, range: 205, cost: 250, splash: { radius: 62, maxTargets: 80 }, projColor: '#3a2a1c', projSize: 6 },
+      ],
+    },
+    frost: {
+      label: 'Frost Tower', unlockCost: 150,
+      describe: 'small damage, slows enemies',
+      levels: [
+        { dmg: 1, fireRate: 1.0, range: 170, cost: 25,  slow: 0.30, slowDuration: 1.6, projColor: '#9ed4ff' },
+        { dmg: 2, fireRate: 1.0, range: 170, cost: 60,  slow: 0.45, slowDuration: 1.8, projColor: '#9ed4ff' },
+        { dmg: 4, fireRate: 1.0, range: 175, cost: 150, slow: 0.60, slowDuration: 2.0, projColor: '#9ed4ff' },
+        { dmg: 7, fireRate: 1.0, range: 180, cost: 350, slow: 0.75, slowDuration: 2.2, freezeChance: 0.15, freezeDuration: 1.0, projColor: '#cfeaff' },
+      ],
+    },
+    sniper: {
+      label: "Sniper's Nest", unlockCost: 200,
+      describe: 'long range, heavy damage, crit',
+      levels: [
+        { dmg: 15,  fireRate: 0.3, range: 280, cost: 100,  crit: 0,    projColor: '#d9c478' },
+        { dmg: 30,  fireRate: 0.4, range: 295, cost: 220,  crit: 0,    projColor: '#d9c478' },
+        { dmg: 65,  fireRate: 0.5, range: 310, cost: 480,  crit: 0.25, projColor: '#d9c478' },
+        { dmg: 140, fireRate: 0.6, range: 325, cost: 1050, crit: 0.40, projColor: '#ffe48a' },
+      ],
+    },
+    flame: {
+      label: 'Flamethrower', unlockCost: 200,
+      describe: 'continuous burn, lingers at higher tiers',
+      levels: [
+        { dps: 4,  range: 100, cost: 90,  burnLinger: 0 },
+        { dps: 9,  range: 110, cost: 200, burnLinger: 0 },
+        { dps: 18, range: 120, cost: 440, burnLinger: 2 },
+        { dps: 35, range: 130, cost: 950, burnLinger: 4 },
+      ],
+    },
+    tesla: {
+      label: 'Tesla Coil', unlockCost: 300,
+      describe: 'lightning chains and slows',
+      levels: [
+        { dmg: 8,  fireRate: 0.7, range: 170, cost: 110,  chain: 3,  slow: 0.30, slowDuration: 1.5 },
+        { dmg: 16, fireRate: 0.7, range: 175, cost: 240,  chain: 7,  slow: 0.30, slowDuration: 1.5 },
+        { dmg: 35, fireRate: 0.7, range: 180, cost: 520,  chain: 12, slow: 0.35, slowDuration: 1.5 },
+        { dmg: 70, fireRate: 0.7, range: 185, cost: 1150, chain: 25, slow: 0.40, slowDuration: 1.8 },
+      ],
+    },
   },
 
   // Militia: one trains at a time, globally.
@@ -140,15 +215,57 @@ const CONFIG = {
       grunt:  { hp: 24, dmg: 11, drop: 10 },
       archer: { hp: 26, dmg: 12, drop: 10 },
       catapult: { hp: 50, dmg: 18, drop: 10 },
+      magi:   { hp: 25, dmg: 12, drop: 10 },
       boss:   { hp: 100, dmg: 22, drop: 50 },
+    },
+    { // Wave 11 — Orc Magi joins. Magi drop scales +2g/wave from 10g.
+      grunts: 4000, archers: 4000, catapults: 1800, magi: 500, bosses: 100,
+      grunt:  { hp: 26, dmg: 12, drop: 11 },
+      archer: { hp: 28, dmg: 13, drop: 11 },
+      catapult: { hp: 55, dmg: 20, drop: 11 },
+      magi:   { hp: 25, dmg: 12, drop: 10 },
+      boss:   { hp: 115, dmg: 24, drop: 55 },
+    },
+    { // Wave 12
+      grunts: 4500, archers: 4500, catapults: 2000, magi: 700, bosses: 100,
+      grunt:  { hp: 28, dmg: 13, drop: 12 },
+      archer: { hp: 30, dmg: 14, drop: 12 },
+      catapult: { hp: 60, dmg: 22, drop: 12 },
+      magi:   { hp: 30, dmg: 14, drop: 12 },
+      boss:   { hp: 130, dmg: 26, drop: 60 },
+    },
+    { // Wave 13
+      grunts: 5000, archers: 5000, catapults: 2200, magi: 900, bosses: 100,
+      grunt:  { hp: 30, dmg: 14, drop: 13 },
+      archer: { hp: 32, dmg: 15, drop: 13 },
+      catapult: { hp: 65, dmg: 24, drop: 13 },
+      magi:   { hp: 35, dmg: 16, drop: 14 },
+      boss:   { hp: 145, dmg: 28, drop: 65 },
+    },
+    { // Wave 14
+      grunts: 5500, archers: 5500, catapults: 2400, magi: 1100, bosses: 100,
+      grunt:  { hp: 32, dmg: 15, drop: 14 },
+      archer: { hp: 34, dmg: 16, drop: 14 },
+      catapult: { hp: 70, dmg: 26, drop: 14 },
+      magi:   { hp: 40, dmg: 18, drop: 16 },
+      boss:   { hp: 160, dmg: 30, drop: 70 },
+    },
+    { // Wave 15
+      grunts: 6000, archers: 6000, catapults: 2600, magi: 1300, bosses: 100,
+      grunt:  { hp: 34, dmg: 16, drop: 15 },
+      archer: { hp: 36, dmg: 17, drop: 15 },
+      catapult: { hp: 75, dmg: 28, drop: 15 },
+      magi:   { hp: 45, dmg: 20, drop: 18 },
+      boss:   { hp: 175, dmg: 32, drop: 75 },
     },
   ],
 
-  // Enemy movement/combat.
+  // Enemy movement/combat. Magi: long cast (3s) + 2s prep = 5s interval.
   enemyStats: {
     grunt:    { speed: 32, range: 14, attackInterval: 1.0, ranged: false, color: '#7aa657' },
     archer:   { speed: 26, range: 26, attackInterval: 1.4, ranged: true,  projSpeed: 280, color: '#a4c45d' },
     catapult: { speed: 18, range: 30, attackInterval: 2.0, ranged: true,  projSpeed: 180, color: '#6a4a30', big: true, projColor: '#3a2a1c', projSize: 4 },
+    magi:     { speed: 22, range: 30, attackInterval: 5.0, ranged: true,  projSpeed: 220, color: '#7b5fa6', big: false, projColor: '#9ed4ff', projSize: 4 },
     boss:     { speed: 26, range: 20, attackInterval: 1.0, ranged: false, color: '#3d6b1f', big: true },
   },
 
@@ -223,20 +340,24 @@ const state = {
   castle: { hp: 0, maxHp: 0, level: 0 },
   wall:   { hp: 0, maxHp: 0, level: 0, broken: false },
 
-  towers: [],              // { slotIdx, level, cooldown }
-  militia: [],             // { type, x, y, hp, maxHp, cooldown }
-  trainingQueue: [],       // [type, ...]
-  currentTraining: null,   // { type, timeLeft, total }
+  towers: [],              // { slotIdx, type, level, cooldown }
+  militia: [],
+  trainingQueue: [],
+  currentTraining: null,
   unlocked: { soldier: false, archer: false, knight: false, mountedKnight: false, crossbowman: false, mage: false, catapult: false, hero: false },
+  unlockedTowers: {},      // populated below from CONFIG.towers
+  freeArcherUsed: false,   // first archer of the run is free; subsequent cost 10g
 
   enemies: [],
   projectiles: [],         // { x, y, vx, vy, dmg, targetId, source }
+  effects: [],             // transient visual effects (e.g. Tesla bolts)
 
   gameOver: false,
   win: false,
 
-  selected: { kind: 'none', slotIdx: -1 }, // 'none' | 'castle' | 'wall' | 'slot'
+  selected: { kind: 'none', slotIdx: -1 },
 
+  simTime: 0,              // accumulated dt for slow/dot expiries
   totalGoldEarned: 0,
   lastTime: 0,
 };
@@ -246,8 +367,10 @@ state.castle.maxHp = CONFIG.castle.levels[0].hp;
 state.castle.hp = state.castle.maxHp;
 state.wall.maxHp = CONFIG.wall.levels[0].hp;
 state.wall.hp = state.wall.maxHp;
-// Player starts with one free archer tower in the middle slot.
-state.towers.push({ slotIdx: 2, level: 0, cooldown: 0 });
+// Tower unlock state. Archer + Slingshot start unlocked; others must be bought.
+for (const type of Object.keys(CONFIG.towers)) {
+  state.unlockedTowers[type] = !!CONFIG.towers[type].startsUnlocked;
+}
 
 let entityIdCounter = 1;
 function nextId() { return entityIdCounter++; }
@@ -425,6 +548,22 @@ function renderWallPanel() {
   }
 }
 
+function towerStatsLine(type, cfg) {
+  if (type === 'flame') {
+    return `${cfg.dps} DMG/s · ${cfg.range} range${cfg.burnLinger ? ` · burn ${cfg.burnLinger}s` : ''}`;
+  }
+  const parts = [`${cfg.dmg} DMG`, `${cfg.fireRate}s rate`, `${cfg.range} range`];
+  if (cfg.hits)         parts.push(`${cfg.hits} hits`);
+  if (cfg.pierce > 1)   parts.push(`pierce x${cfg.pierce}`);
+  if (cfg.splash)       parts.push(`splash ${cfg.splash.maxTargets}`);
+  if (cfg.chain)        parts.push(`chain ${cfg.chain}`);
+  if (cfg.slow)         parts.push(`slow ${Math.round(cfg.slow * 100)}%`);
+  if (cfg.freezeChance) parts.push(`${Math.round(cfg.freezeChance * 100)}% freeze`);
+  if (cfg.crit > 0)     parts.push(`${Math.round(cfg.crit * 100)}% crit`);
+  if (cfg.dot)          parts.push(`+${cfg.dot.dps}/s · ${cfg.dot.duration}s`);
+  return parts.join(' · ');
+}
+
 function renderSlotPanel() {
   const info = document.getElementById('slot-info');
   const row = document.getElementById('slot-actions');
@@ -433,29 +572,40 @@ function renderSlotPanel() {
 
   const tower = state.towers.find(t => t.slotIdx === idx);
   if (!tower) {
-    info.innerHTML = `<strong>Slot ${idx + 1}</strong> — empty.`;
-    const b = document.createElement('button');
-    const cost = CONFIG.archerTower.placeCost;
-    b.textContent = `Build Archer Tower — ${cost}g`;
-    b.disabled = state.gold < cost;
-    b.onclick = () => buildTower(idx);
-    row.appendChild(b);
+    info.innerHTML = `<strong>Slot ${idx + 1}</strong> — empty. Pick a tower:`;
+    for (const type of Object.keys(CONFIG.towers)) {
+      const tCfg = CONFIG.towers[type];
+      const b = document.createElement('button');
+      if (!state.unlockedTowers[type]) {
+        b.textContent = `Unlock ${tCfg.label} — ${tCfg.unlockCost}g`;
+        b.disabled = state.gold < tCfg.unlockCost;
+        b.onclick = () => unlockTower(type);
+      } else {
+        const lvl0 = tCfg.levels[0];
+        const cost = buildTowerCost(type);
+        const note = (type === 'archer' && cost === 0) ? ' (first one free)' : '';
+        b.textContent = `Build ${tCfg.label} — ${cost}g${note} · ${towerStatsLine(type, lvl0)}`;
+        b.disabled = state.gold < cost;
+        b.onclick = () => buildTower(idx, type);
+      }
+      row.appendChild(b);
+    }
   } else {
+    const tCfg = CONFIG.towers[tower.type];
     const lvl = tower.level;
-    const cur = CONFIG.archerTower.levels[lvl];
-    const next = CONFIG.archerTower.levels[lvl + 1];
-    info.innerHTML =
-      `<strong>Archer Tower L${lvl + 1}</strong> · ${cur.dmg} DMG · ${cur.fireRate}s rate · ${cur.range} range`;
+    const cur = tCfg.levels[lvl];
+    const next = tCfg.levels[lvl + 1];
+    info.innerHTML = `<strong>${tCfg.label} L${lvl + 1}</strong> · ${towerStatsLine(tower.type, cur)}`;
     if (next) {
       const b = document.createElement('button');
-      b.textContent = `Upgrade to L${lvl + 2} (${next.dmg} DMG, ${next.fireRate}s) — ${next.cost}g`;
+      b.textContent = `Upgrade to L${lvl + 2} — ${next.cost}g · ${towerStatsLine(tower.type, next)}`;
       b.disabled = state.gold < next.cost;
       b.onclick = () => upgradeTower(idx);
       row.appendChild(b);
     } else {
       const span = document.createElement('div');
       span.className = 'muted small';
-      span.textContent = 'Tower is at max level for Phase 1.';
+      span.textContent = `${tCfg.label} is at max level.`;
       row.appendChild(span);
     }
   }
@@ -513,17 +663,37 @@ function upgradeWall() {
   refreshUI();
 }
 
-function buildTower(slotIdx) {
+function unlockTower(type) {
+  if (state.unlockedTowers[type]) return;
+  const tCfg = CONFIG.towers[type];
+  if (!tCfg || !spend(tCfg.unlockCost)) return;
+  state.unlockedTowers[type] = true;
+  refreshUI();
+}
+
+function buildTowerCost(type) {
+  const tCfg = CONFIG.towers[type];
+  if (!tCfg) return Infinity;
+  if (type === 'archer' && !state.freeArcherUsed) return 0;
+  return tCfg.levels[0].cost;
+}
+
+function buildTower(slotIdx, type) {
   if (state.towers.find(t => t.slotIdx === slotIdx)) return;
-  if (!spend(CONFIG.archerTower.placeCost)) return;
-  state.towers.push({ slotIdx, level: 0, cooldown: 0 });
+  const tCfg = CONFIG.towers[type];
+  if (!tCfg || !state.unlockedTowers[type]) return;
+  const cost = buildTowerCost(type);
+  if (!spend(cost)) return;
+  if (type === 'archer' && !state.freeArcherUsed) state.freeArcherUsed = true;
+  state.towers.push({ slotIdx, type, level: 0, cooldown: 0 });
   refreshUI();
 }
 
 function upgradeTower(slotIdx) {
   const t = state.towers.find(x => x.slotIdx === slotIdx);
   if (!t) return;
-  const next = CONFIG.archerTower.levels[t.level + 1];
+  const tCfg = CONFIG.towers[t.type];
+  const next = tCfg.levels[t.level + 1];
   if (!next || !spend(next.cost)) return;
   t.level += 1;
   refreshUI();
@@ -599,13 +769,13 @@ function startWave() {
 
   const w = CONFIG.waves[state.wave - 1];
   const queue = [];
-  // Interleave grunts/archers/catapults proportionally so the horde feels mixed.
-  const counts = { grunt: w.grunts, archer: w.archers, catapult: w.catapults || 0 };
-  const total = counts.grunt + counts.archer + counts.catapult;
+  // Interleave grunts/archers/catapults/magi proportionally.
+  const counts = { grunt: w.grunts, archer: w.archers, catapult: w.catapults || 0, magi: w.magi || 0 };
+  const total = counts.grunt + counts.archer + counts.catapult + counts.magi;
+  const keys = ['grunt', 'archer', 'catapult', 'magi'];
   for (let i = 0; i < total; i++) {
-    // Pick the type with the largest remaining count.
     let pick = 'grunt', best = -1;
-    for (const k of ['grunt', 'archer', 'catapult']) {
+    for (const k of keys) {
       if (counts[k] > best) { best = counts[k]; pick = k; }
     }
     queue.push(pick);
@@ -663,6 +833,15 @@ function spawnEnemy(kind) {
       ranged: s.ranged, color: s.color, big: s.big,
       projSpeed: s.projSpeed, projColor: s.projColor, projSize: s.projSize,
     });
+  } else if (kind === 'magi') {
+    const s = CONFIG.enemyStats.magi;
+    state.enemies.push({ ...base, type: 'magi',
+      hp: w.magi.hp, maxHp: w.magi.hp,
+      dmg: w.magi.dmg, drop: w.magi.drop,
+      speed: s.speed, range: s.range, attackInterval: s.attackInterval,
+      ranged: s.ranged, color: s.color,
+      projSpeed: s.projSpeed, projColor: s.projColor, projSize: s.projSize,
+    });
   }
 }
 
@@ -672,6 +851,10 @@ function spawnEnemy(kind) {
 
 function update(dt) {
   if (state.gameOver) return;
+  state.simTime += dt;
+  if (state.effects.length) {
+    state.effects = state.effects.filter(fx => fx.expiry > state.simTime);
+  }
 
   // --- Training queue ---
   if (state.currentTraining) {
@@ -787,6 +970,27 @@ function update(dt) {
 //  - At the gate, attack it. Once it falls, push past the gate to engage the
 //    closest militia, then the castle.
 function updateEnemy(e, dt) {
+  // Expire slow / freeze if elapsed.
+  if (e.slowExpiry && state.simTime >= e.slowExpiry) {
+    e.slowFactor = 1;
+    e.slowExpiry = 0;
+  }
+  // Apply DoTs (poison) and burn (flamethrower linger).
+  if (e.dots && e.dots.length > 0) {
+    let i = 0;
+    while (i < e.dots.length) {
+      const d = e.dots[i];
+      if (state.simTime >= d.expiry) { e.dots.splice(i, 1); continue; }
+      e.hp -= d.dps * dt;
+      i += 1;
+    }
+  }
+  if (e.burnExpiry && state.simTime < e.burnExpiry) {
+    e.hp -= (e.burnDps || 0) * dt;
+  }
+
+  const effectiveSpeed = e.speed * (e.slowFactor !== undefined ? e.slowFactor : 1);
+
   // 1. Walk the road until reaching the gate.
   if (e.pathIndex < GATE_IDX) {
     const next = PATH[e.pathIndex + 1];
@@ -794,9 +998,9 @@ function updateEnemy(e, dt) {
     const d = Math.hypot(dx, dy);
     if (d <= 4) {
       e.pathIndex += 1;
-    } else {
-      e.x += (dx / d) * e.speed * dt;
-      e.y += (dy / d) * e.speed * dt;
+    } else if (effectiveSpeed > 0) {
+      e.x += (dx / d) * effectiveSpeed * dt;
+      e.y += (dy / d) * effectiveSpeed * dt;
     }
     return;
   }
@@ -806,11 +1010,15 @@ function updateEnemy(e, dt) {
   if (!obstacle) return;
   const d = dist(e.x, e.y, obstacle.x, obstacle.y);
   if (d > obstacle.hitRadius + e.range) {
-    const dx = obstacle.x - e.x, dy = obstacle.y - e.y;
-    const len = Math.hypot(dx, dy) || 1;
-    e.x += (dx / len) * e.speed * dt;
-    e.y += (dy / len) * e.speed * dt;
+    if (effectiveSpeed > 0) {
+      const dx = obstacle.x - e.x, dy = obstacle.y - e.y;
+      const len = Math.hypot(dx, dy) || 1;
+      e.x += (dx / len) * effectiveSpeed * dt;
+      e.y += (dy / len) * effectiveSpeed * dt;
+    }
   } else {
+    // Frozen enemies can't attack either.
+    if (e.slowFactor === 0) return;
     e.attackTimer -= dt;
     if (e.attackTimer <= 0) {
       if (e.ranged) {
@@ -865,36 +1073,110 @@ function applyDamageToObstacle(obs, dmg) {
 
 function updateTower(t, dt) {
   const slot = SLOTS[t.slotIdx];
-  const cfg = CONFIG.archerTower.levels[t.level];
+  const tCfg = CONFIG.towers[t.type];
+  const cfg = tCfg.levels[t.level];
+
+  // Flamethrower: continuous AoE — no cooldown, no projectile.
+  if (t.type === 'flame') {
+    for (const e of state.enemies) {
+      if (e.hp <= 0) continue;
+      const d = dist(slot.x, slot.y, e.x, e.y);
+      if (d <= cfg.range) {
+        e.hp -= cfg.dps * dt;
+        if (cfg.burnLinger > 0) {
+          e.burnDps = Math.max(e.burnDps || 0, cfg.dps);
+          e.burnExpiry = Math.max(e.burnExpiry || 0, state.simTime + cfg.burnLinger);
+        }
+      }
+    }
+    return;
+  }
+
   t.cooldown -= dt;
   if (t.cooldown > 0) return;
 
-  // Find closest enemy in range.
+  // Pick the closest enemy in range.
   let best = null, bestD = Infinity;
   for (const e of state.enemies) {
+    if (e.hp <= 0) continue;
     const d = dist(slot.x, slot.y, e.x, e.y);
     if (d <= cfg.range && d < bestD) { bestD = d; best = e; }
   }
   if (!best) return;
 
-  // Fire arrow. L4 has 20% crit (2x damage) and pierce x2.
+  // Tesla Coil — instant chain lightning, no projectile.
+  if (t.type === 'tesla') {
+    fireTeslaChain(slot, best, cfg);
+    t.cooldown = cfg.fireRate;
+    return;
+  }
+
+  // Everything else fires a projectile carrying the type's effects.
   const dx = best.x - slot.x, dy = best.y - slot.y;
   const len = Math.hypot(dx, dy) || 1;
-  const speed = 380;
+  const speed = (t.type === 'sniper') ? 540 : 380;
   const isCrit = cfg.crit > 0 && Math.random() < cfg.crit;
   state.projectiles.push({
     x: slot.x, y: slot.y - 4,
     vx: (dx / len) * speed,
     vy: (dy / len) * speed,
-    dmg: cfg.dmg * (isCrit ? 2 : 1),
+    dmg: (cfg.dmg || 0) * (isCrit ? 2 : 1),
     targetKind: 'enemy',
     target: best,
     fromEnemy: false,
-    color: isCrit ? '#ffd86b' : '#f3e8d8',
-    pierce: cfg.pierce || 1,
-    hitIds: null, // lazily allocated on first hit when pierce > 1
+    color: isCrit ? '#ffd86b' : (cfg.projColor || '#f3e8d8'),
+    projSize: cfg.projSize || 2,
+    pierce: cfg.hits || cfg.pierce || 1,
+    splash: cfg.splash || null,
+    slow: cfg.slow ? { factor: cfg.slow, duration: cfg.slowDuration || 1.5 } : null,
+    freeze: cfg.freezeChance ? { chance: cfg.freezeChance, duration: cfg.freezeDuration || 1.0 } : null,
+    dot: cfg.dot || null,
+    hitIds: null,
   });
   t.cooldown = cfg.fireRate;
+}
+
+function fireTeslaChain(slot, firstTarget, cfg) {
+  const hits = [firstTarget];
+  let cur = firstTarget;
+  for (let i = 1; i < cfg.chain; i++) {
+    let next = null, bestD = Infinity;
+    for (const e of state.enemies) {
+      if (e.hp <= 0) continue;
+      if (hits.indexOf(e) !== -1) continue;
+      const d = dist(cur.x, cur.y, e.x, e.y);
+      if (d <= 80 && d < bestD) { bestD = d; next = e; }
+    }
+    if (!next) break;
+    hits.push(next);
+    cur = next;
+  }
+  for (const e of hits) {
+    e.hp -= cfg.dmg;
+    if (cfg.slow) applySlowToEnemy(e, cfg.slow, cfg.slowDuration);
+  }
+  // Visual bolt: from the tower through every chained enemy. Fades fast.
+  state.effects.push({
+    kind: 'lightning',
+    points: [{ x: slot.x, y: slot.y - 4 }, ...hits.map(h => ({ x: h.x, y: h.y }))],
+    expiry: state.simTime + 0.18,
+  });
+}
+
+function applySlowToEnemy(e, factor, duration) {
+  const newFactor = 1 - factor;
+  e.slowFactor = Math.min(e.slowFactor !== undefined ? e.slowFactor : 1, newFactor);
+  e.slowExpiry = Math.max(e.slowExpiry || 0, state.simTime + duration);
+}
+
+function applyFreezeToEnemy(e, duration) {
+  e.slowFactor = 0;
+  e.slowExpiry = Math.max(e.slowExpiry || 0, state.simTime + duration);
+}
+
+function applyDotToEnemy(e, dot) {
+  e.dots = e.dots || [];
+  e.dots.push({ dps: dot.dps, expiry: state.simTime + dot.duration });
 }
 
 function spawnMilitia(type) {
@@ -984,8 +1266,6 @@ function updateProjectile(p, dt) {
     }
   } else {
     // Tower / militia projectile vs enemy.
-    // Splash projectiles (catapult militia): on reaching the target, damage the
-    // target plus up to maxTargets-1 nearby enemies in radius.
     if (p.splash) {
       if (p.target && p.target.hp > 0) {
         if (dist(p.x, p.y, p.target.x, p.target.y) <= 8) {
@@ -993,29 +1273,27 @@ function updateProjectile(p, dt) {
           p.dead = true;
         }
       } else {
-        // Target died mid-flight: detonate at current location.
         applySplash(p, null);
         p.dead = true;
       }
-    }
-    // Piercing projectiles (Archer Tower L4): walk through up to `pierce` enemies.
-    else if (p.pierce > 1) {
+    } else if (p.pierce > 1) {
+      // Multi-hit / pierce: walk through up to `pierce` enemies.
       if (!p.hitIds) p.hitIds = new Set();
       for (const e of state.enemies) {
         if (p.hitIds.has(e.id)) continue;
         if (e.hp <= 0) continue;
         if (dist(p.x, p.y, e.x, e.y) <= 8) {
           e.hp -= p.dmg;
+          applyProjectileEffects(p, e);
           p.hitIds.add(e.id);
           p.pierce -= 1;
           if (p.pierce <= 0) { p.dead = true; break; }
         }
       }
-    }
-    // Standard single-target arrow.
-    else if (p.target && p.target.hp > 0) {
+    } else if (p.target && p.target.hp > 0) {
       if (dist(p.x, p.y, p.target.x, p.target.y) <= 8) {
         p.target.hp -= p.dmg;
+        applyProjectileEffects(p, p.target);
         p.dead = true;
       }
     } else {
@@ -1029,7 +1307,6 @@ function updateProjectile(p, dt) {
 function applySplash(p, primary) {
   const cfg = p.splash;
   const cx = p.x, cy = p.y;
-  // Sort enemies in range by distance; pick the closest maxTargets.
   const hits = [];
   for (const e of state.enemies) {
     if (e.hp <= 0) continue;
@@ -1041,8 +1318,15 @@ function applySplash(p, primary) {
   for (const [, e] of hits) {
     if (applied >= cfg.maxTargets) break;
     e.hp -= p.dmg;
+    applyProjectileEffects(p, e);
     applied += 1;
   }
+}
+
+function applyProjectileEffects(p, e) {
+  if (p.slow) applySlowToEnemy(e, p.slow.factor, p.slow.duration);
+  if (p.freeze && Math.random() < p.freeze.chance) applyFreezeToEnemy(e, p.freeze.duration);
+  if (p.dot) applyDotToEnemy(e, p.dot);
 }
 
 // =====================================================================
@@ -1066,6 +1350,8 @@ function render() {
   for (const m of state.militia) drawMilitiaMember(m);
   for (const e of state.enemies) drawEnemy(e);
   for (const p of state.projectiles) drawProjectile(p);
+  drawFlameAuras();
+  drawEffects();
 
   // Selection highlight.
   if (state.selected.kind === 'slot') {
@@ -1186,9 +1472,24 @@ function drawWallOutline() {
   );
 }
 
+const TOWER_BODY = {
+  archer:    ['#8a6c4a', '#a98259', '#c79866', '#dcb480'],
+  slingshot: ['#7a684a', '#8a7757', '#9e8665', '#b59676'],
+  poison:    ['#5e7a48', '#6e8c52', '#7e9d5d', '#92b266'],
+  cannon:    ['#3a2a1c', '#4a3527', '#5a4034', '#6a4d42'],
+  frost:     ['#7ba7c0', '#92bcd2', '#a8d0e2', '#cbe6f4'],
+  sniper:    ['#5a4830', '#6a5638', '#7a6440', '#a98648'],
+  flame:     ['#9c4a2a', '#b75c30', '#cf6e38', '#e08240'],
+  tesla:     ['#615280', '#7868a0', '#8c7fc0', '#a698db'],
+};
+const TOWER_ROOF = {
+  archer: '#3a2a1c', slingshot: '#2e2a1e', poison: '#2a3c1f',
+  cannon: '#1a1410', frost: '#3a546b', sniper: '#3a2a1c',
+  flame: '#3a1a0a', tesla: '#2a2244',
+};
+
 function drawSlot(s) {
   const tower = state.towers.find(t => t.slotIdx === s.idx);
-  // Base ring.
   ctx.strokeStyle = tower ? '#8a6c4a' : '#b0987a';
   ctx.fillStyle = tower ? '#5a4636' : 'rgba(255,255,255,0.08)';
   ctx.lineWidth = 2;
@@ -1199,22 +1500,33 @@ function drawSlot(s) {
 
   if (tower) {
     const lvl = tower.level;
-    // Body color shifts by level.
-    const cols = ['#8a6c4a', '#a98259', '#c79866'];
-    ctx.fillStyle = cols[lvl];
+    const bodyCols = TOWER_BODY[tower.type] || TOWER_BODY.archer;
+    const roof = TOWER_ROOF[tower.type] || TOWER_ROOF.archer;
+    ctx.fillStyle = bodyCols[Math.min(lvl, bodyCols.length - 1)];
     ctx.fillRect(s.x - 7, s.y - 18, 14, 18);
-    // Top
-    ctx.fillStyle = '#3a2a1c';
+    // Roof.
+    ctx.fillStyle = roof;
     ctx.beginPath();
     ctx.moveTo(s.x - 9, s.y - 18);
     ctx.lineTo(s.x, s.y - 28);
     ctx.lineTo(s.x + 9, s.y - 18);
     ctx.closePath();
     ctx.fill();
-    // Level pips
+    // Type marker (a coloured dot near the top so different towers are
+    // distinguishable at a glance even before levelling).
+    const markerColor = {
+      archer: '#f3e8d8', slingshot: '#c8b78a', poison: '#8ec07c',
+      cannon: '#1a1410', frost: '#cfeaff', sniper: '#ffe48a',
+      flame: '#ff9c4a', tesla: '#cfb8ff',
+    }[tower.type] || '#f3e8d8';
+    ctx.fillStyle = markerColor;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y - 13, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Level pips.
     ctx.fillStyle = '#f3e8d8';
     for (let i = 0; i <= lvl; i++) {
-      ctx.fillRect(s.x - 6 + i * 5, s.y - 6, 3, 3);
+      ctx.fillRect(s.x - 6 + i * 4, s.y - 5, 3, 3);
     }
   } else {
     ctx.fillStyle = '#b0987a';
@@ -1222,6 +1534,39 @@ function drawSlot(s) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('+', s.x, s.y);
+  }
+}
+
+function drawFlameAuras() {
+  for (const t of state.towers) {
+    if (t.type !== 'flame') continue;
+    const slot = SLOTS[t.slotIdx];
+    const cfg = CONFIG.towers.flame.levels[t.level];
+    const grad = ctx.createRadialGradient(slot.x, slot.y, 0, slot.x, slot.y, cfg.range);
+    grad.addColorStop(0, 'rgba(255, 156, 74, 0.32)');
+    grad.addColorStop(0.6, 'rgba(255, 90, 30, 0.12)');
+    grad.addColorStop(1, 'rgba(255, 90, 30, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(slot.x, slot.y, cfg.range, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawEffects() {
+  for (const fx of state.effects) {
+    if (fx.kind !== 'lightning') continue;
+    const alpha = Math.max(0, (fx.expiry - state.simTime) / 0.18);
+    ctx.strokeStyle = `rgba(180, 200, 255, ${alpha})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const pts = fx.points;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      if (i === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x + (Math.random() - 0.5) * 4, p.y + (Math.random() - 0.5) * 4);
+    }
+    ctx.stroke();
   }
 }
 
@@ -1310,11 +1655,39 @@ function drawEnemy(e) {
     ctx.lineTo(e.x + 6, e.y - 2);
     ctx.stroke();
   } else if (e.type === 'catapult') {
-    // Bucket on top
     ctx.fillStyle = '#3a2a1c';
     ctx.fillRect(e.x - 7, e.y - r - 2, 14, 5);
     ctx.fillStyle = '#1a1410';
     ctx.fillRect(e.x - 4, e.y - r - 1, 8, 3);
+  } else if (e.type === 'magi') {
+    // Hood / pointy hat marker.
+    ctx.fillStyle = '#3a2a44';
+    ctx.beginPath();
+    ctx.moveTo(e.x - 5, e.y - r + 2);
+    ctx.lineTo(e.x, e.y - r - 5);
+    ctx.lineTo(e.x + 5, e.y - r + 2);
+    ctx.closePath();
+    ctx.fill();
+  }
+  // Status overlays.
+  if (e.slowFactor === 0) {
+    ctx.fillStyle = 'rgba(180, 220, 255, 0.45)';
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, r + 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (e.slowFactor !== undefined && e.slowFactor < 1) {
+    ctx.strokeStyle = 'rgba(180, 220, 255, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, r + 2, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if (e.burnExpiry && state.simTime < e.burnExpiry) {
+    ctx.strokeStyle = 'rgba(255, 140, 60, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(e.x + 2, e.y - r - 1, 2, 0, Math.PI * 2);
+    ctx.stroke();
   }
 }
 
@@ -1355,7 +1728,14 @@ function resetGame() {
   state.nextSpawnAt = 0;
   state.castle = { hp: CONFIG.castle.levels[0].hp, maxHp: CONFIG.castle.levels[0].hp, level: 0 };
   state.wall   = { hp: CONFIG.wall.levels[0].hp,   maxHp: CONFIG.wall.levels[0].hp,   level: 0, broken: false };
-  state.towers = [{ slotIdx: 2, level: 0, cooldown: 0 }];
+  state.towers = [];
+  state.freeArcherUsed = false;
+  state.unlockedTowers = {};
+  for (const type of Object.keys(CONFIG.towers)) {
+    state.unlockedTowers[type] = !!CONFIG.towers[type].startsUnlocked;
+  }
+  state.effects = [];
+  state.simTime = 0;
   state.militia = [];
   state.trainingQueue = [];
   state.currentTraining = null;
